@@ -61,10 +61,10 @@
   #include <esp_wifi.h>
   #include <HTTPClient.h>
 
-  const char* ssid = "Kopretina"; //Wifi nova; Kopretina; Vodafone-F59F
-  const char* password = "SvataKaterina"; //ajrad1961; SvataKaterina; MWk8anwctn8urmve
+  const char* ssid = "***";
+  const char* password = "***";
 
-  String serverName = "http://epkpug-awv3v4.tmep.cz/index.php?";
+  String serverName = "http://***.tmep.cz/index.php?";
 
   void wifiF()
   {
