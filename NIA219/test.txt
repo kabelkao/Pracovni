@@ -1,0 +1,874 @@
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x1 (POWERON),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Set calibration on max 16V and 400mA ...
+Measuring voltage and current with INA219 ...
+Pripojovani
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0xf (BROWNOUT_RST),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Failed to find INA219 chip
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x1 (POWERON),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Set calibration on max 16V and 400mA ...
+Measuring voltage and current with INA219 ...
+Pripojovani
+....
+Pripojeno do site, IP adresa zarizeni: 192.168.1.140
+Bus Voltage:   3.04 V
+Shunt Voltage: 0.00 mV
+Load Voltage:  3.04 V
+Current:       -0.10 mA
+Power:         0.00 mW
+
+
+Napětí na baterii = 4.08 V
+
+WiFi = -45 dB
+http://epkpug-awv3v4.tmep.cz/index.php?loadV=3.04&curr=-0.10&pwr=0.00&v=4.08&rssi=-45
+HTTP Response code: 200
+
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x1 (POWERON),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Set calibration on max 16V and 400mA ...
+Measuring voltage and current with INA219 ...
+Pripojovani
+....
+Pripojeno do site, IP adresa zarizeni: 192.168.1.140
+Bus Voltage:   3.04 V
+Shunt Voltage: 0.00 mV
+Load Voltage:  3.04 V
+Current:       0.00 mA
+Power:         0.00 mW
+
+
+Napětí na baterii = 4.07 V
+
+WiFi = -46 dB
+http://epkpug-awv3v4.tmep.cz/index.php?loadV=3.04&curr=0.00&pwr=0.00&v=4.07&rssi=-46
+HTTP Response code: 200
+
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x1 (POWERON),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Set calibration on max 16V and 400mA ...
+Measuring voltage and current with INA219 ...
+Pripojovani
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0xf (BROWNOUT_RST),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Failed to find INA219 chip
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x1 (POWERON),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Set calibration on max 16V and 400mA ...
+Measuring voltage and current with INA219 ...
+Pripojovani
+....
+Pripojeno do site, IP adresa zarizeni: 192.168.1.140
+Bus Voltage:   3.07 V
+Shunt Voltage: 0.00 mV
+Load Voltage:  3.07 V
+Current:       0.00 mA
+Power:         0.00 mW
+
+
+Napětí na baterii = 4.08 V
+
+WiFi = -54 dB
+http://epkpug-awv3v4.tmep.cz/index.php?loadV=3.07&curr=0.00&pwr=0.00&v=4.08&rssi=-54
+HTTP Response code: 200
+
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x1 (POWERON),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Set calibration on max 16V and 400mA ...
+Measuring voltage and current with INA219 ...
+Pripojovani
+....
+Pripojeno do site, IP adresa zarizeni: 192.168.1.140
+Bus Voltage:   3.04 V
+Shunt Voltage: 0.00 mV
+Load Voltage:  3.04 V
+Current:       0.00 mA
+Power:         0.00 mW
+
+
+Napětí na baterii = 4.08 V
+
+WiFi = -46 dB
+http://epkpug-awv3v4.tmep.cz/index.php?loadV=3.04&curr=0.00&pwr=0.00&v=4.08&rssi=-46
+HTTP Response code: 200
+
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x5 (DSLEEP),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Set calibration on max 16V and 400mA ...
+Measuring voltage and current with INA219 ...
+Pripojovani
+....
+Pripojeno do site, IP adresa zarizeni: 192.168.1.140
+Bus Voltage:   4.69 V
+Shunt Voltage: 0.32 mV
+Load Voltage:  4.69 V
+Current:       3.20 mA
+Power:         15.00 mW
+
+
+Napětí na baterii = 4.14 V
+
+WiFi = -44 dB
+http://epkpug-awv3v4.tmep.cz/index.php?loadV=4.69&curr=3.20&pwr=15.00&v=4.14&rssi=-44
+HTTP Response code: 200
+
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x1 (POWERON),boot:0xd (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Set calibration on max 16V and 400mA ...
+Measuring voltage and current with INA219 ...
+Pripojovani
+....
+Pripojeno do site, IP adresa zarizeni: 192.168.1.140
+Bus Voltage:   4.73 V
+Shunt Voltage: 0.79 mV
+Load Voltage:  4.73 V
+Current:       7.90 mA
+Power:         38.00 mW
+
+
+Napětí na baterii = 0.03 V
+
+WiFi = -51 dB
+http://epkpug-awv3v4.tmep.cz/index.ph�ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0xf (BROWNOUT_RST),boot:0xd (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Failed to find INA219 chip
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x1 (POWERON),boot:0xd (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Set calibration on max 16V and 400mA ...
+Measuring voltage and current with INA219 ...
+Pripojovani
+....
+Pripojeno do site, IP adresa zarizeni: 192.168.1.140
+Bus Voltage:   4.73 V
+Shunt Voltage: 0.79 mV
+Load Voltage:  4.73 V
+Current:       7.90 mA
+Power:         38.00 mW
+
+
+Napětí na baterii = 0.06 V
+
+WiFi = -49 dB
+http://epkpug-awv3v4.tmep.cz/index.php?loadV=4.73&curr=7.90&pwr=38.00&v=0.06&rssi=-49
+HTTP Response code: 200
+
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x1 (POWERON),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Set calibration on max 16V and 400mA ...
+Measuring voltage and current with INA219 ...
+Pripojovani
+....
+Pripojeno do site, IP adresa zarizeni: 192.168.1.140
+Bus Voltage:   4.74 V
+Shunt Voltage: 0.75 mV
+Load Voltage:  4.74 V
+Current:       7.50 mA
+Power:         36.00 mW
+
+
+Napětí na baterii = 4.19 V
+
+WiFi = -55 dB
+http://epkpug-awv3v4.tmep.cz/index.php?loadV=4.74&curr=7.50&pwr=36.00&v=4.19&rssi=-55
+HTTP Response code: 200
+
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x5 (DSLEEP),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Set calibration on max 16V and 400mA ...
+Measuring voltage and current with INA219 ...
+Pripojovani
+....
+Pripojeno do site, IP adresa zarizeni: 192.168.1.140
+Bus Voltage:   4.77 V
+Shunt Voltage: 0.70 mV
+Load Voltage:  4.77 V
+Current:       7.00 mA
+Power:         33.00 mW
+
+
+Napětí na baterii = 4.19 V
+
+WiFi = -66 dB
+http://epkpug-awv3v4.tmep.cz/index.php?loadV=4.77&curr=7.00&pwr=33.00&v=4.19&rssi=-66
+HTTP Response code: 200
+
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x5 (DSLEEP),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Set calibration on max 16V and 400mA ...
+Measuring voltage and current with INA219 ...
+Pripojovani
+....
+Pripojeno do site, IP adresa zarizeni: 192.168.1.140
+Bus Voltage:   4.82 V
+Shunt Voltage: 0.66 mV
+Load Voltage:  4.82 V
+Current:       6.60 mA
+Power:         31.00 mW
+
+
+Napětí na baterii = 4.19 V
+
+WiFi = -54 dB
+http://epkpug-awv3v4.tmep.cz/index.php?loadV=4.82&curr=6.60&pwr=31.00&v=4.19&rssi=-54
+HTTP Response code: 200
+
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x5 (DSLEEP),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Set calibration on max 16V and 400mA ...
+Measuring voltage and current with INA219 ...
+Pripojovani
+....
+Pripojeno do site, IP adresa zarizeni: 192.168.1.140
+Bus Voltage:   4.86 V
+Shunt Voltage: 0.63 mV
+Load Voltage:  4.86 V
+Current:       6.30 mA
+Power:         31.00 mW
+
+
+Napětí na baterii = 4.19 V
+
+WiFi = -59 dB
+http://epkpug-awv3v4.tmep.cz/index.php?loadV=4.86&curr=6.30&pwr=31.00&v=4.19&rssi=-59
+HTTP Response code: 200
+
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x5 (DSLEEP),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Set calibration on max 16V and 400mA ...
+Measuring voltage and current with INA219 ...
+Pripojovani
+....
+Pripojeno do site, IP adresa zarizeni: 192.168.1.140
+Bus Voltage:   4.90 V
+Shunt Voltage: 0.61 mV
+Load Voltage:  4.90 V
+Current:       6.00 mA
+Power:         29.00 mW
+
+
+Napětí na baterii = 4.19 V
+
+WiFi = -54 dB
+http://epkpug-awv3v4.tmep.cz/index.php?loadV=4.90&curr=6.00&pwr=29.00&v=4.19&rssi=-54
+HTTP Response code: 200
+
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x5 (DSLEEP),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Set calibration on max 16V and 400mA ...
+Measuring voltage and current with INA219 ...
+Pripojovani
+....
+Pripojeno do site, IP adresa zarizeni: 192.168.1.140
+Bus Voltage:   5.02 V
+Shunt Voltage: 0.53 mV
+Load Voltage:  5.02 V
+Current:       5.40 mA
+Power:         28.00 mW
+
+
+Napětí na baterii = 4.17 V
+
+WiFi = -54 dB
+http://epkpug-awv3v4.tmep.cz/index.php?loadV=5.02&curr=5.40&pwr=28.00&v=4.17&rssi=-54
+HTTP Response code: 200
+
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x5 (DSLEEP),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Failed to find INA219 chip
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x5 (DSLEEP),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Set calibration on max 16V and 400mA ...
+Measuring voltage and current with INA219 ...
+Pripojovani
+....
+Pripojeno do site, IP adresa zarizeni: 192.168.1.140
+Bus Voltage:   5.02 V
+Shunt Voltage: 0.53 mV
+Load Voltage:  5.02 V
+Current:       5.30 mA
+Power:         26.00 mW
+
+
+Napětí na baterii = 4.16 V
+
+WiFi = -54 dB
+http://epkpug-awv3v4.tmep.cz/index.php?loadV=5.02&curr=5.30&pwr=26.00&v=4.16&rssi=-54
+HTTP Response code: 200
+
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x5 (DSLEEP),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Failed to find INA219 chip
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x5 (DSLEEP),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Set calibration on max 16V and 400mA ...
+Measuring voltage and current with INA219 ...
+Pripojovani
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0xf (BROWNOUT_RST),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Failed to find INA219 chip
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x5 (DSLEEP),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Set calibration on max 16V and 400mA ...
+Measuring voltage and current with INA219 ...
+Pripojovani
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0xf (BROWNOUT_RST),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Failed to find INA219 chip
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x5 (DSLEEP),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Set calibration on max 16V and 400mA ...
+Measuring voltage and current with INA219 ...
+Pripojovani
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0xf (BROWNOUT_RST),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Failed to find INA219 chip
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x5 (DSLEEP),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Set calibration on max 16V and 400mA ...
+Measuring voltage and current with INA219 ...
+Pripojovani
+....
+Pripojeno do site, IP adresa zarizeni: 192.168.1.140
+Bus Voltage:   1.86 V
+Shunt Voltage: -0.01 mV
+Load Voltage:  1.86 V
+Current:       0.00 mA
+Power:         0.00 mW
+
+
+Napětí na baterii = 4.15 V
+
+WiFi = -53 dB
+http://ep�ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0xf (BROWNOUT_RST),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Failed to find INA219 chip
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x5 (DSLEEP),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Set calibration on max 16V and 400mA ...
+Measuring voltage and current with INA219 ...
+Pripojovani
+....
+Pripojeno do site, IP adresa zarizeni: 192.168.1.140
+Bus Voltage:   1.87 V
+Shunt Voltage: -0.01 mV
+Load Voltage:  1.87 V
+Current:       0.00 mA
+Power:         0.00 mW
+
+
+Napětí na baterii = 4.15 V
+
+WiFi = -54 dB
+http://epkpug-awv3v4.tmep.cz/index.php?loadV=1.87&curr=0.00&pwr=0.00&v=4.15&rssi=-54
+HTTP Response code: 200
+
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x5 (DSLEEP),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Set calibration on max 16V and 400mA ...
+Measuring voltage and current with INA219 ...
+Pripojovani
+....
+Pripojeno do site, IP adresa zarizeni: 192.168.1.140
+Bus Voltage:   1.93 V
+Shunt Voltage: 0.00 mV
+Load Voltage:  1.93 V
+Current:       -0.10 mA
+Power:         0.00 mW
+
+
+Napětí na baterii = 4.15 V
+
+WiFi = -53 dB
+http://epkpug-awv3v4.tmep.cz/index.php?loadV=1.93&curr=-0.10&pwr=0.00&v=4.15&rssi=-53
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0xf (BROWNOUT_RST),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Failed to find INA219 chip
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x5 (DSLEEP),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Set calibration on max 16V and 400mA ...
+Measuring voltage and current with INA219 ...
+Pripojovani
+....
+Pripojeno do site, IP adresa zarizeni: 192.168.1.140
+Bus Voltage:   2.29 V
+Shunt Voltage: -0.01 mV
+Load Voltage:  2.29 V
+Current:       -0.10 mA
+Power:         0.00 mW
+
+
+Napětí na baterii = 4.15 V
+
+WiFi = -57 dB
+http://epkpug-awv3v4.tmep.cz/index.php?loadV=2.29&curr=-0.10&pwr=0.00&v=4.15&rssi=-57
+HTTP Response code: 200
+
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x5 (DSLEEP),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Failed to find INA219 chip
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x5 (DSLEEP),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Set calibration on max 16V and 400mA ...
+Measuring voltage and current with INA219 ...
+Pripojovani
+....
+Pripojeno do site, IP adresa zarizeni: 192.168.1.140
+Bus Voltage:   5.00 V
+Shunt Voltage: 0.32 mV
+Load Voltage:  5.00 V
+Current:       3.20 mA
+Power:         16.00 mW
+
+
+Napětí na baterii = 4.15 V
+
+WiFi = -50 dB
+http://epkpug-awv3v4.tmep.cz/index.php?loadV=5.00&curr=3.20&pwr=16.00&v=4.15&rssi=-50
+HTTP Response code: 200
+
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x5 (DSLEEP),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Failed to find INA219 chip
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x5 (DSLEEP),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Set calibration on max 16V and 400mA ...
+Measuring voltage and current with INA219 ...
+Pripojovani
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0xf (BROWNOUT_RST),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Failed to find INA219 chip
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x5 (DSLEEP),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Set calibration on max 16V and 400mA ...
+Measuring voltage and current with INA219 ...
+Pripojovani
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0xf (BROWNOUT_RST),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Failed to find INA219 chip
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x5 (DSLEEP),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Set calibration on max 16V and 400mA ...
+Measuring voltage and current with INA219 ...
+Pripojovani
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0xf (BROWNOUT_RST),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Failed to find INA219 chip
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x5 (DSLEEP),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Set calibration on max 16V and 400mA ...
+Measuring voltage and current with INA219 ...
+Pripojovani
+....
+Pripojeno do site, IP adresa zarizeni: 192.168.1.140
+Bus Voltage:   1.96 V
+Shunt Voltage: 0.00 mV
+Load Voltage:  1.96 V
+Current:       0.00 mA
+Power:         0.00 mW
+
+
+Napětí na baterii = 4.15 V
+
+WiFi = -53 dB
+http://epkpug-awv3v4.tmep.cz/index.php?loadV=1.96&curr=0.00&pwr=0.00&v=4.15&rssi=-53
+HTTP Response code: 200
+
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x5 (DSLEEP),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Failed to find INA219 chip
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x5 (DSLEEP),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Set calibration on max 16V and 400mA ...
+Measuring voltage and current with INA219 ...
+Pripojovani
+....
+Pripojeno do site, IP adresa zarizeni: 192.168.1.140
+Bus Voltage:   2.17 V
+Shunt Voltage: 0.00 mV
+Load Voltage:  2.17 V
+Current:       0.00 mA
+Power:         0.00 mW
+
+
+Napětí na baterii = 4.15 V
+
+WiFi = -50 dB
+http://epkpug-awv3v4.tmep.cz/index.php?loadV=2.17&curr=0.00&pwr=0.00&v=4.15&rssi=-50
+HTTP Response code: 200
+
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x5 (DSLEEP),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Failed to find INA219 chip
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x5 (DSLEEP),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Set calibration on max 16V and 400mA ...
+Measuring voltage and current with INA219 ...
+Pripojovani
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0xf (BROWNOUT_RST),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Failed to find INA219 chip
+ESP-ROM:esp32c3-api1-20210207
+Build:Feb  7 2021
+rst:0x5 (DSLEEP),boot:0xc (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fcd5810,len:0x438
+load:0x403cc710,len:0x91c
+load:0x403ce710,len:0x25b0
+entry 0x403cc710
+Set calibration on max 16V and 400mA ...
+Measuring voltage and current with INA219 ...
+Pripojovani
+....
+Pripojeno do site, IP adresa zarizeni: 192.168.1.140
+Bus Voltage:   2.00 V
+Shunt Voltage: 0.00 mV
+Load Voltage:  2.00 V
+Current:       0.00 mA
+Power:         0.00 mW
+
+
+Napětí na baterii = 4.15 V
+
+WiFi = -52 dB
+http://epkpug-awv3v4.tmep.cz/index.php?loadV=2.00&curr=0.00&pwr=0.00&v=4.15&rssi=-52
+HTTP Response code: 200
+
