@@ -1,5 +1,7 @@
 /* Poznámky:
 - pro funční čtení napětí baterie je nutné kompilovat kód verzí knihovny 2.0.9 pro desku ESP32 C3 Dev Module
+
+- padá do brownoutu
 */
 
 // ============= NAPĚTÍ BATERKY ============= //
@@ -41,6 +43,9 @@
 
   void inaF()
   {
+    Serial.println("Measuring voltage and current with INA219 ...");
+    Serial.println();
+
     shuntvoltage = ina219.getShuntVoltage_mV();
     busvoltage = ina219.getBusVoltage_V();
     current_mA = ina219.getCurrent_mA();
@@ -56,15 +61,41 @@
   }
 // ============= INA219 ============= //
 
+// ============= SHT40 ============= //
+  #include <Wire.h>
+  #include "Adafruit_SHT4x.h"
+  Adafruit_SHT4x sht4 = Adafruit_SHT4x();
+  
+  float tempSHT40 = 0;
+  float humSHT40 = 0; 
+
+  void dataSHT40()
+  {
+    sensors_event_t humidity, temp; // temperature and humidity variables
+    sht4.getEvent(&humidity, &temp);
+
+    Serial.println();
+    Serial.print("Teplota vzduchu = ");
+    tempSHT40 = temp.temperature;
+    Serial.print(tempSHT40);
+    Serial.println(" °C");
+    
+    Serial.print("Vlhkost vzduchu = ");
+    humSHT40 = humidity.relative_humidity;
+    Serial.print(humSHT40);
+    Serial.println(" %");
+  }
+// ============= SHT40 ============= //
+
 // ============= WIFI+TMEP ============= //
   #include <WiFi.h>
   #include <esp_wifi.h>
   #include <HTTPClient.h>
 
-  const char* ssid = "***";
-  const char* password = "***";
+  const char* ssid = "Kopretina"; //Wifi nova; Kopretina; Vodafone-F59F
+  const char* password = "SvataKaterina"; //ajrad1961; SvataKaterina; MWk8anwctn8urmve
 
-  String serverName = "http://***.tmep.cz/index.php?";
+  String serverName = "http://epkpug-awv3v4.tmep.cz/index.php?";
 
   void wifiF()
   {
@@ -83,7 +114,9 @@
         + "&curr=" + current_mA
         + "&pwr=" + power_mW
         + "&v=" + bat_voltage
-        + "&rssi=" + WiFi.RSSI();
+        + "&rssi=" + WiFi.RSSI()
+        + "&tempSHT40=" + tempSHT40
+        + "&humSHT40=" + humSHT40;
 
         Serial.println(serverPath);
         
@@ -115,6 +148,8 @@
   }
 // ============= WIFI+TMEP ============= //
 
+
+
 void setup(void) 
 {
   Serial.begin(115200);
@@ -125,60 +160,81 @@ void setup(void)
   // ============= I2C ============= //
     Wire.begin(SDA, SCL);
   // ============= I2C ============= //
-
-  // ============= INA219 ============= //
-    pinMode(PIN_ON, OUTPUT);      // Set EN pin for uSUP stabilisator as output
-    digitalWrite(PIN_ON, HIGH);   // Turn on the uSUP power
-
-    if (! ina219.begin()) {
-    Serial.println("Failed to find INA219 chip");
-
-    Serial.println("Failed to find INA219 chip");
-    esp_sleep_enable_timer_wakeup(60000 * 1000);
-    esp_deep_sleep_start(); // start způsobí restart desky
-    //while (1) { delay(10); }
-    }
-
-    Serial.println("Set calibration on max 16V and 400mA ...");
-    ina219.setCalibration_16V_400mA();
-    Serial.println("Measuring voltage and current with INA219 ...");
-  // ============= INA219 ============= //
-
+  
   // ============= WIFI+TMEP ============= //
-    int pokus = 0; // promena pro pocitani pokusu o pripojeni
+    int pokusWifi = 0; // promena pro pocitani pokusu o pripojeni
 
     WiFi.begin(ssid, password);
     Serial.println("Pripojovani");
     while(WiFi.status() != WL_CONNECTED) 
     {
-    delay(500);
-    Serial.print(".");
-    if(pokus > 20) // Pokud se behem 10s nepripoji, uspi se na 300s = 5min
-    {
-      esp_sleep_enable_timer_wakeup(300 * 1000000);
-      esp_deep_sleep_start();
-    }
-    pokus++;
+      delay(500);
+      Serial.print(".");
+      if(pokusWifi > 20) // Pokud se behem 10s nepripoji, uspi se na 300s = 5min
+      {
+        esp_sleep_enable_timer_wakeup(300 * 1000000);
+        esp_deep_sleep_start();
+      }
+      pokusWifi++;
     }
 
     Serial.println();
     Serial.print("Pripojeno do site, IP adresa zarizeni: ");
     Serial.println(WiFi.localIP());
   // ============= WIFI+TMEP ============= //
+  
+  // ============= INA219 ============= //
+    pinMode(PIN_ON, OUTPUT);      // Set EN pin for uSUP stabilisator as output
+    digitalWrite(PIN_ON, HIGH);   // Turn on the uSUP power
+    int pokusINA = 0; // promena pro pocitani pokusu o pripojeni
+
+    while(! ina219.begin())
+    {
+      Serial.println("Failed to find INA219 chip, next try");
+      delay(500);
+      Serial.print(".");
+      if(pokusINA > 10)
+      {
+        Serial.println("Wait 1 min and repeat");
+        esp_sleep_enable_timer_wakeup(60000 * 1000);
+        esp_deep_sleep_start();
+      }
+      pokusINA++;
+    }
+
+    Serial.println();
+    Serial.println("INA219 ready, set calibration on max 16V and 400mA ...");
+    ina219.setCalibration_16V_400mA();
+
+  // ============= INA219 ============= //
+  
+  // ============= SHT40 ============= //
+    if (! sht4.begin()) 
+      {
+        Serial.println("SHT4x not found");
+        Serial.println("Check the connection");
+        while (1) delay(1);
+      }
+
+    sht4.setPrecision(SHT4X_HIGH_PRECISION); // highest resolution
+    sht4.setHeater(SHT4X_NO_HEATER); // no heater
+  // ============= SHT40 ============= //
+
 }
 
 void loop(void) 
 {
   inaF();
   baterkaF();
+  dataSHT40();
   wifiF();
   
-  //delay(2000);
+  Serial.flush();
 
   // ============= DEEP SLEEP ============= //
     // čas pro funkci deepSleep je milisekundy * 1000
     // hodnota 21 600 000 000 uspí zařízení na 6 hodin: 6 hodin * 60 minut * 60 sekund * 1000 milisekund  
-    esp_sleep_enable_timer_wakeup(300000 * 1000); 
+    esp_sleep_enable_timer_wakeup(60000 * 1000); 
     esp_deep_sleep_start();
   // ============= DEEP SLEEP ============= //
 }
