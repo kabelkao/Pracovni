@@ -1,0 +1,641 @@
+#include <WiFi.h>
+#include <WebServer.h>
+#include <ESPmDNS.h>
+#include <NTPClient.h>
+#include <WiFiUdp.h>
+#include <Preferences.h>
+#include <ArduinoJson.h>
+
+// Konfigurace pinů
+#define LED_PIN 3
+#define PUMP_PIN 4
+#define BUTTON1_PIN 1  // Override LED
+#define BUTTON2_PIN 0  // Override čerpadlo
+
+// WiFi nastavení
+struct WiFiNetwork {
+  const char* ssid;
+  const char* password;
+};
+
+WiFiNetwork wifiNetworks[] = {
+  {"Kopretina", "SvataKaterina"},
+  {"mostyMTS", "MikrotikPMT"}
+};
+const int numNetworks = 2;
+
+// Webový server
+WebServer server(80);
+
+// NTP klient pro čas
+WiFiUDP ntpUDP;
+NTPClient timeClient(ntpUDP, "pool.ntp.org", 3600, 60000); // UTC+1 (Česká republika)
+
+// Preferences pro uložení nastavení
+Preferences preferences;
+
+// Globální proměnné
+bool ledState = false;
+bool pumpState = false;
+bool ledOverride = false;
+bool pumpOverride = false;
+bool button1Pressed = false;
+bool button2Pressed = false;
+unsigned long lastButton1Press = 0;
+unsigned long lastButton2Press = 0;
+const unsigned long debounceDelay = 50;
+
+// Časové nastavení
+struct TimeSchedule {
+  int startHour;
+  int startMinute;
+  int endHour;
+  int endMinute;
+  bool enabled;
+};
+
+TimeSchedule ledSchedule = {8, 0, 20, 0, true};
+int pumpInterval = 30;
+int pumpDuration = 5;
+unsigned long lastPumpRun = 0;
+bool pumpEnabled = true;
+
+void setup() {
+  Serial.begin(115200);
+  delay(2000);
+  
+  Serial.println("=== HYDROPONIE ESP32 START ===");
+  
+  // Inicializace pinů - relé jsou aktivní v LOW stavu
+  pinMode(LED_PIN, OUTPUT);
+  pinMode(PUMP_PIN, OUTPUT);
+  pinMode(BUTTON1_PIN, INPUT_PULLUP);
+  pinMode(BUTTON2_PIN, INPUT_PULLUP);
+  
+  // Vypnutí výstupů na začátku (HIGH = relé vypnuto)
+  digitalWrite(LED_PIN, HIGH);
+  digitalWrite(PUMP_PIN, HIGH);
+  Serial.println("Piny inicializovány");
+  
+  // Načtení uložených nastavení
+  loadSettings();
+  Serial.println("Nastavení načtena");
+  
+  // Pokus o připojení k WiFi
+  bool wifiConnected = connectToWiFi();
+  
+  if (wifiConnected) {
+    Serial.println("WiFi úspěšně připojeno!");
+    Serial.print("IP adresa: ");
+    Serial.println(WiFi.localIP());
+    Serial.print("Síť: ");
+    Serial.println(WiFi.SSID());
+    
+    // Inicializace mDNS
+    if (!MDNS.begin("hydroponie")) {
+      Serial.println("Chyba při spuštění mDNS");
+    } else {
+      Serial.println("mDNS spuštěno: http://hydroponie.local");
+    }
+    
+    // Inicializace NTP
+    timeClient.begin();
+    timeClient.update();
+    Serial.println("NTP klient inicializován");
+    
+  } else {
+    Serial.println("NEPODAŘILO SE PŘIPOJIT K ŽÁDNÉ WIFI!");
+    Serial.println("Spouštím AP mód...");
+    
+    // Spustit AP mód
+    WiFi.softAP("Hydroponie-Setup", "123456789");
+    Serial.print("AP spuštěn - IP: ");
+    Serial.println(WiFi.softAPIP());
+    Serial.println("Připojte se k WiFi: Hydroponie-Setup");
+    Serial.println("Heslo: 123456789");
+  }
+  
+  // Nastavení webového serveru
+  setupWebServer();
+  
+  server.begin();
+  Serial.println("HTTP server spuštěn");
+  Serial.println("=== INICIALIZACE DOKONČENA ===");
+}
+
+bool connectToWiFi() {
+  WiFi.mode(WIFI_STA);
+  
+  // Projít všechny dostupné WiFi sítě
+  Serial.println("Skenuji WiFi sítě...");
+  int n = WiFi.scanNetworks();
+  Serial.printf("Nalezeno %d WiFi sítí\n", n);
+  
+  for (int i = 0; i < n; i++) {
+    Serial.printf("%d: %s (%d dBm)\n", i + 1, WiFi.SSID(i).c_str(), WiFi.RSSI(i));
+  }
+  
+  // Pokusit se připojit k našim známým sítím
+  for (int netIndex = 0; netIndex < numNetworks; netIndex++) {
+    String targetSSID = wifiNetworks[netIndex].ssid;
+    
+    // Zkontrolovat, jestli je naše síť dostupná
+    bool networkFound = false;
+    for (int i = 0; i < n; i++) {
+      if (WiFi.SSID(i) == targetSSID) {
+        networkFound = true;
+        break;
+      }
+    }
+    
+    if (networkFound) {
+      Serial.printf("Pokouším se připojit k síti: %s\n", wifiNetworks[netIndex].ssid);
+      WiFi.begin(wifiNetworks[netIndex].ssid, wifiNetworks[netIndex].password);
+      
+      // Čekat na připojení (max 15 sekund)
+      int attempts = 0;
+      while (WiFi.status() != WL_CONNECTED && attempts < 30) {
+        delay(500);
+        Serial.print(".");
+        attempts++;
+      }
+      Serial.println();
+      
+      if (WiFi.status() == WL_CONNECTED) {
+        Serial.printf("Úspěšně připojeno k: %s\n", wifiNetworks[netIndex].ssid);
+        return true;
+      } else {
+        Serial.printf("Nepodařilo se připojit k: %s\n", wifiNetworks[netIndex].ssid);
+        WiFi.disconnect();
+        delay(1000);
+      }
+    } else {
+      Serial.printf("Síť %s není dostupná\n", wifiNetworks[netIndex].ssid);
+    }
+  }
+  
+  return false;
+}
+
+void loop() {
+  server.handleClient();
+  
+  // Aktualizovat čas pouze pokud je WiFi připojeno
+  if (WiFi.status() == WL_CONNECTED) {
+    timeClient.update();
+  }
+  
+  handleButtons();
+  controlDevices();
+  delay(100);
+}
+
+void handleButtons() {
+  unsigned long currentTime = millis();
+  
+  if (digitalRead(BUTTON1_PIN) == LOW && !button1Pressed) {
+    if (currentTime - lastButton1Press > debounceDelay) {
+      ledOverride = !ledOverride;
+      button1Pressed = true;
+      lastButton1Press = currentTime;
+      Serial.printf("LED Override: %s\n", ledOverride ? "ON" : "OFF");
+    }
+  } else if (digitalRead(BUTTON1_PIN) == HIGH) {
+    button1Pressed = false;
+  }
+  
+  if (digitalRead(BUTTON2_PIN) == LOW && !button2Pressed) {
+    if (currentTime - lastButton2Press > debounceDelay) {
+      pumpOverride = !pumpOverride;
+      button2Pressed = true;
+      lastButton2Press = currentTime;
+      Serial.printf("Čerpadlo Override: %s\n", pumpOverride ? "ON" : "OFF");
+    }
+  } else if (digitalRead(BUTTON2_PIN) == HIGH) {
+    button2Pressed = false;
+  }
+}
+
+void controlDevices() {
+  int currentHour = timeClient.getHours();
+  int currentMinute = timeClient.getMinutes();
+  int currentTimeMinutes = currentHour * 60 + currentMinute;
+  
+  // Řízení LED
+  bool shouldLedBeOn = false;
+  if (ledOverride) {
+    shouldLedBeOn = true;
+  } else if (ledSchedule.enabled) {
+    int startTime = ledSchedule.startHour * 60 + ledSchedule.startMinute;
+    int endTime = ledSchedule.endHour * 60 + ledSchedule.endMinute;
+    
+    if (startTime <= endTime) {
+      shouldLedBeOn = (currentTimeMinutes >= startTime && currentTimeMinutes < endTime);
+    } else {
+      shouldLedBeOn = (currentTimeMinutes >= startTime || currentTimeMinutes < endTime);
+    }
+  }
+  
+  if (shouldLedBeOn != ledState) {
+    ledState = shouldLedBeOn;
+    digitalWrite(LED_PIN, ledState ? LOW : HIGH);
+    Serial.printf("LED: %s\n", ledState ? "ZAPNUTO" : "VYPNUTO");
+  }
+  
+  // Řízení čerpadla
+  bool shouldPumpBeOn = false;
+  if (pumpOverride) {
+    shouldPumpBeOn = true;
+  } else if (pumpEnabled) {
+    unsigned long currentMillis = millis();
+    
+    if (currentMillis - lastPumpRun >= (pumpInterval * 60000UL)) {
+      shouldPumpBeOn = true;
+      if (!pumpState) {
+        lastPumpRun = currentMillis;
+      }
+    }
+    
+    if (pumpState && (currentMillis - lastPumpRun >= (pumpDuration * 60000UL))) {
+      shouldPumpBeOn = false;
+    }
+  }
+  
+  if (shouldPumpBeOn != pumpState) {
+    pumpState = shouldPumpBeOn;
+    digitalWrite(PUMP_PIN, pumpState ? LOW : HIGH);
+    Serial.printf("Čerpadlo: %s\n", pumpState ? "ZAPNUTO" : "VYPNUTO");
+  }
+}
+
+void setupWebServer() {
+  // Hlavní stránka
+  server.on("/", HTTP_GET, [](){
+    server.send(200, "text/html", getIndexHTML());
+  });
+  
+  // API pro získání stavu
+  server.on("/api/status", HTTP_GET, [](){
+    StaticJsonDocument<1024> doc;
+    
+    if (WiFi.status() == WL_CONNECTED) {
+      doc["time"] = timeClient.getFormattedTime();
+    } else {
+      doc["time"] = "Bez připojení";
+    }
+    
+    doc["ledState"] = ledState;
+    doc["pumpState"] = pumpState;
+    doc["ledOverride"] = ledOverride;
+    doc["pumpOverride"] = pumpOverride;
+    doc["ledSchedule"]["startHour"] = ledSchedule.startHour;
+    doc["ledSchedule"]["startMinute"] = ledSchedule.startMinute;
+    doc["ledSchedule"]["endHour"] = ledSchedule.endHour;
+    doc["ledSchedule"]["endMinute"] = ledSchedule.endMinute;
+    doc["ledSchedule"]["enabled"] = ledSchedule.enabled;
+    doc["pumpInterval"] = pumpInterval;
+    doc["pumpDuration"] = pumpDuration;
+    doc["pumpEnabled"] = pumpEnabled;
+    doc["wifiConnected"] = (WiFi.status() == WL_CONNECTED);
+    doc["wifiSSID"] = WiFi.SSID();
+    doc["wifiRSSI"] = WiFi.RSSI();
+    
+    // Přidat informace o čase do spuštění čerpadla
+    if (pumpEnabled && !pumpOverride) {
+      unsigned long currentMillis = millis();
+      unsigned long timeUntilNextPump = (pumpInterval * 60000UL) - (currentMillis - lastPumpRun);
+      
+      if (pumpState) {
+        // Čerpadlo běží - zobrazit zbývající čas
+        unsigned long timeUntilStop = (pumpDuration * 60000UL) - (currentMillis - lastPumpRun);
+        doc["pumpTimeRemaining"] = (int)(timeUntilStop / 1000); // v sekundách
+        doc["pumpNextAction"] = "stop";
+      } else {
+        // Čerpadlo neběží - zobrazit čas do spuštění
+        doc["pumpTimeRemaining"] = (int)(timeUntilNextPump / 1000); // v sekundách
+        doc["pumpNextAction"] = "start";
+      }
+    } else {
+      doc["pumpTimeRemaining"] = 0;
+      doc["pumpNextAction"] = "manual";
+    }
+    
+    String response;
+    serializeJson(doc, response);
+    server.send(200, "application/json", response);
+  });
+  
+  server.on("/api/override", HTTP_POST, [](){
+    if (server.hasArg("led")) {
+      ledOverride = server.arg("led") == "true";
+    }
+    if (server.hasArg("pump")) {
+      pumpOverride = server.arg("pump") == "true";
+    }
+    server.send(200, "application/json", "{\"status\":\"ok\"}");
+  });
+  
+  server.on("/api/schedule", HTTP_POST, [](){
+    if (server.hasArg("device")) {
+      String device = server.arg("device");
+      
+      if (device == "led") {
+        if (server.hasArg("startHour")) ledSchedule.startHour = server.arg("startHour").toInt();
+        if (server.hasArg("startMinute")) ledSchedule.startMinute = server.arg("startMinute").toInt();
+        if (server.hasArg("endHour")) ledSchedule.endHour = server.arg("endHour").toInt();
+        if (server.hasArg("endMinute")) ledSchedule.endMinute = server.arg("endMinute").toInt();
+        if (server.hasArg("enabled")) ledSchedule.enabled = server.arg("enabled") == "true";
+      } else if (device == "pump") {
+        if (server.hasArg("interval")) pumpInterval = server.arg("interval").toInt();
+        if (server.hasArg("duration")) pumpDuration = server.arg("duration").toInt();
+        if (server.hasArg("enabled")) pumpEnabled = server.arg("enabled") == "true";
+      }
+      
+      saveSettings();
+    }
+    server.send(200, "application/json", "{\"status\":\"ok\"}");
+  });
+
+  server.on("/api/restart", HTTP_POST, [](){
+    server.send(200, "application/json", "{\"status\":\"restarting...\"}");
+    delay(1000);
+    ESP.restart();
+  });
+}
+
+void loadSettings() {
+  preferences.begin("hydroponie", false);
+  
+  ledSchedule.startHour = preferences.getInt("led_start_h", 8);
+  ledSchedule.startMinute = preferences.getInt("led_start_m", 0);
+  ledSchedule.endHour = preferences.getInt("led_end_h", 20);
+  ledSchedule.endMinute = preferences.getInt("led_end_m", 0);
+  ledSchedule.enabled = preferences.getBool("led_enabled", true);
+  
+  pumpInterval = preferences.getInt("pump_interval", 30);
+  pumpDuration = preferences.getInt("pump_duration", 5);
+  pumpEnabled = preferences.getBool("pump_enabled", true);
+  
+  preferences.end();
+}
+
+void saveSettings() {
+  preferences.begin("hydroponie", false);
+  
+  preferences.putInt("led_start_h", ledSchedule.startHour);
+  preferences.putInt("led_start_m", ledSchedule.startMinute);
+  preferences.putInt("led_end_h", ledSchedule.endHour);
+  preferences.putInt("led_end_m", ledSchedule.endMinute);
+  preferences.putBool("led_enabled", ledSchedule.enabled);
+  
+  preferences.putInt("pump_interval", pumpInterval);
+  preferences.putInt("pump_duration", pumpDuration);
+  preferences.putBool("pump_enabled", pumpEnabled);
+  
+  preferences.end();
+}
+
+String getIndexHTML() {
+  bool isAPMode = (WiFi.getMode() == WIFI_AP) || (WiFi.status() != WL_CONNECTED);
+  
+  String html = "<!DOCTYPE html>";
+  html += "<html lang=\"cs\">";
+  html += "<head>";
+  html += "<meta charset=\"UTF-8\">";
+  html += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">";
+  html += "<title>Hydroponie - Ovládání</title>";
+  html += "<style>";
+  html += "body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; background: linear-gradient(135deg, #667eea, #764ba2); min-height: 100vh; color: #333; }";
+  html += ".container { max-width: 800px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); overflow: hidden; }";
+  html += ".header { background: linear-gradient(45deg, #4CAF50, #45a049); color: white; padding: 30px 20px; text-align: center; }";
+  html += ".header h1 { margin: 0; font-size: 2.5em; font-weight: 300; }";
+  html += ".time-display { font-size: 1.5em; margin-top: 10px; opacity: 0.9; }";
+  html += ".wifi-info { font-size: 0.9em; margin-top: 5px; opacity: 0.8; }";
+  html += ".content { padding: 30px; }";
+  html += ".section { margin-bottom: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px; border-left: 4px solid #4CAF50; }";
+  html += ".section h2 { margin-top: 0; color: #2c3e50; font-size: 1.3em; }";
+  html += ".control-group { display: flex; flex-wrap: wrap; gap: 15px; align-items: center; margin-bottom: 15px; }";
+  html += ".control-group label { font-weight: 500; min-width: 100px; }";
+  html += ".control-group input { padding: 8px 12px; border: 2px solid #ddd; border-radius: 5px; font-size: 14px; }";
+  html += ".control-group input:focus { outline: none; border-color: #4CAF50; }";
+  html += ".button { background: #4CAF50; color: white; border: none; padding: 12px 24px; border-radius: 25px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.3s ease; margin: 5px; }";
+  html += ".button:hover { background: #45a049; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4); }";
+  html += ".button.active { background: #ff6b6b; }";
+  html += ".button.active:hover { background: #ff5252; }";
+  html += ".button.warning { background: #ff9800; }";
+  html += ".button.warning:hover { background: #e68900; }";
+  html += ".status { display: inline-block; padding: 5px 15px; border-radius: 20px; font-weight: 500; margin-left: 10px; }";
+  html += ".status.on { background: #d4edda; color: #155724; }";
+  html += ".status.off { background: #f8d7da; color: #721c24; }";
+  html += ".time-input { display: flex; gap: 5px; align-items: center; }";
+  html += ".time-input input { width: 60px; }";
+  html += ".device-status { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }";
+  html += ".ap-mode-warning { background: #fff3cd; border: 2px solid #ffeaa7; border-radius: 10px; padding: 20px; margin-bottom: 20px; text-align: center; }";
+  html += ".pump-timer { font-size: 0.9em; color: #666; margin-left: 10px; }";
+  html += ".editing { background: #fff9c4 !important; border: 2px solid #f39c12 !important; }";
+  html += "@media (max-width: 600px) { .control-group { flex-direction: column; align-items: stretch; } .control-group label { min-width: auto; } }";
+  html += "</style></head>";
+  
+  html += "<body>";
+  html += "<div class=\"container\">";
+  html += "<div class=\"header\">";
+  html += "<h1>🌱 Hydroponie</h1>";
+  html += "<div class=\"time-display\" id=\"currentTime\">--:--:--</div>";
+  html += "<div class=\"wifi-info\" id=\"wifiInfo\">Načítám...</div>";
+  html += "</div>";
+  
+  html += "<div class=\"content\">";
+
+  if (isAPMode) {
+    html += "<div class=\"ap-mode-warning\">";
+    html += "<h2>⚠️ Konfigurační mód</h2>";
+    html += "<p>ESP32 se nepodařilo připojit k žádné známé WiFi síti.<br>";
+    html += "Připojili jste se k AP módu. Některé funkce mohou být omezené.</p>";
+    html += "<button class=\"button warning\" onclick=\"restartDevice()\">🔄 Restart zařízení</button>";
+    html += "</div>";
+  }
+  
+  html += "<div class=\"section\">";
+  html += "<h2>📊 Aktuální stav</h2>";
+  html += "<div class=\"device-status\">";
+  html += "<div>💡 LED pásek: <span class=\"status off\" id=\"ledStatus\">VYPNUTO</span></div>";
+  html += "<button class=\"button\" id=\"ledOverride\" onclick=\"toggleOverride('led')\">Override LED</button>";
+  html += "</div>";
+  html += "<div class=\"device-status\">";
+  html += "<div>💧 Čerpadlo: <span class=\"status off\" id=\"pumpStatus\">VYPNUTO</span><span class=\"pump-timer\" id=\"pumpTimer\"></span></div>";
+  html += "<button class=\"button\" id=\"pumpOverride\" onclick=\"toggleOverride('pump')\">Override čerpadlo</button>";
+  html += "</div>";
+  html += "</div>";
+  
+  html += "<div class=\"section\">";
+  html += "<h2>💡 Nastavení LED pásku</h2>";
+  html += "<div class=\"control-group\">";
+  html += "<label>Zapnout:</label>";
+  html += "<div class=\"time-input\">";
+  html += "<input type=\"number\" id=\"ledStartHour\" min=\"0\" max=\"23\" value=\"8\" onchange=\"markEditing(this)\" onfocus=\"markEditing(this)\">";
+  html += "<span>:</span>";
+  html += "<input type=\"number\" id=\"ledStartMinute\" min=\"0\" max=\"59\" value=\"0\" onchange=\"markEditing(this)\" onfocus=\"markEditing(this)\">";
+  html += "</div></div>";
+  html += "<div class=\"control-group\">";
+  html += "<label>Vypnout:</label>";
+  html += "<div class=\"time-input\">";
+  html += "<input type=\"number\" id=\"ledEndHour\" min=\"0\" max=\"23\" value=\"20\" onchange=\"markEditing(this)\" onfocus=\"markEditing(this)\">";
+  html += "<span>:</span>";
+  html += "<input type=\"number\" id=\"ledEndMinute\" min=\"0\" max=\"59\" value=\"0\" onchange=\"markEditing(this)\" onfocus=\"markEditing(this)\">";
+  html += "</div></div>";
+  html += "<div class=\"control-group\">";
+  html += "<label><input type=\"checkbox\" id=\"ledEnabled\" checked onchange=\"markEditing(this)\"> Automatické ovládání zapnuto</label>";
+  html += "</div>";
+  html += "<button class=\"button\" onclick=\"saveLedSchedule()\">💾 Uložit nastavení LED</button>";
+  html += "</div>";
+  
+  html += "<div class=\"section\">";
+  html += "<h2>💧 Nastavení čerpadla</h2>";
+  html += "<div class=\"control-group\">";
+  html += "<label>Interval mezi spuštěním (minuty):</label>";
+  html += "<input type=\"number\" id=\"pumpInterval\" min=\"1\" max=\"1440\" value=\"30\" onchange=\"markEditing(this)\" onfocus=\"markEditing(this)\">";
+  html += "</div>";
+  html += "<div class=\"control-group\">";
+  html += "<label>Doba běhu (minuty):</label>";
+  html += "<input type=\"number\" id=\"pumpDuration\" min=\"1\" max=\"60\" value=\"5\" onchange=\"markEditing(this)\" onfocus=\"markEditing(this)\">";
+  html += "</div>";
+  html += "<div class=\"control-group\">";
+  html += "<label><input type=\"checkbox\" id=\"pumpEnabled\" checked onchange=\"markEditing(this)\"> Automatické ovládání zapnuto</label>";
+  html += "</div>";
+  html += "<button class=\"button\" onclick=\"savePumpSchedule()\">💾 Uložit nastavení čerpadla</button>";
+  html += "</div>";
+  
+  html += "</div></div>";
+  
+  html += "<script>";
+  html += "let currentStatus = {};";
+  html += "let isEditing = false;";
+  html += "let updateInterval;";
+  html += "window.onload = function() { startUpdating(); };";
+  
+  html += "function startUpdating() {";
+  html += "updateStatus();";
+  html += "updateInterval = setInterval(function() { if (!isEditing) updateStatus(); }, 2000);";
+  html += "}";
+  
+  html += "function markEditing(element) {";
+  html += "isEditing = true;";
+  html += "element.classList.add('editing');";
+  html += "setTimeout(function() { isEditing = false; element.classList.remove('editing'); }, 5000);";
+  html += "}";
+  
+  html += "function formatTime(seconds) {";
+  html += "if (seconds <= 0) return '';";
+  html += "const mins = Math.floor(seconds / 60);";
+  html += "const secs = seconds % 60;";
+  html += "if (mins > 0) return `${mins}m ${secs}s`;";
+  html += "return `${secs}s`;";
+  html += "}";
+  
+  html += "function updateStatus() {";
+  html += "fetch('/api/status').then(response => response.json()).then(data => {";
+  html += "currentStatus = data;";
+  html += "document.getElementById('currentTime').textContent = data.time;";
+  html += "if (data.wifiConnected) {";
+  html += "document.getElementById('wifiInfo').innerHTML = '📶 ' + data.wifiSSID + ' (' + data.wifiRSSI + ' dBm)';";
+  html += "} else {";
+  html += "document.getElementById('wifiInfo').innerHTML = '📶 Není připojeno k WiFi';";
+  html += "}";
+  html += "updateDeviceStatus('led', data.ledState, data.ledOverride);";
+  html += "updateDeviceStatus('pump', data.pumpState, data.pumpOverride);";
+  
+  // Aktualizovat časovač čerpadla
+  html += "const pumpTimer = document.getElementById('pumpTimer');";
+  html += "if (data.pumpTimeRemaining > 0 && data.pumpNextAction !== 'manual') {";
+  html += "const timeStr = formatTime(data.pumpTimeRemaining);";
+  html += "if (data.pumpNextAction === 'stop') {";
+  html += "pumpTimer.textContent = ' - zastaví za ' + timeStr;";
+  html += "} else {";
+  html += "pumpTimer.textContent = ' - spustí za ' + timeStr;";
+  html += "}";
+  html += "} else {";
+  html += "pumpTimer.textContent = '';";
+  html += "}";
+  
+  html += "if (!isEditing) loadFormData(data);";
+  html += "}).catch(error => console.error('Chyba při načítání stavu:', error));";
+  html += "}";
+  
+  html += "function updateDeviceStatus(device, state, override) {";
+  html += "const statusElement = document.getElementById(device + 'Status');";
+  html += "const overrideButton = document.getElementById(device + 'Override');";
+  html += "if (state) { statusElement.textContent = 'ZAPNUTO'; statusElement.className = 'status on'; }";
+  html += "else { statusElement.textContent = 'VYPNUTO'; statusElement.className = 'status off'; }";
+  html += "if (override) { overrideButton.textContent = 'Zrušit override'; overrideButton.classList.add('active'); }";
+  html += "else { overrideButton.textContent = 'Override ' + (device === 'led' ? 'LED' : 'čerpadlo'); overrideButton.classList.remove('active'); }";
+  html += "}";
+  
+  html += "function loadFormData(data) {";
+  html += "const inputs = ['ledStartHour', 'ledStartMinute', 'ledEndHour', 'ledEndMinute', 'ledEnabled', 'pumpInterval', 'pumpDuration', 'pumpEnabled'];";
+  html += "inputs.forEach(id => {";
+  html += "const element = document.getElementById(id);";
+  html += "if (element && !element.classList.contains('editing')) {";
+  html += "if (element.type === 'checkbox') {";
+  html += "if (id === 'ledEnabled') element.checked = data.ledSchedule.enabled;";
+  html += "else if (id === 'pumpEnabled') element.checked = data.pumpEnabled;";
+  html += "} else {";
+  html += "if (id.startsWith('led')) {";
+  html += "const key = id.replace('led', '').toLowerCase();";
+  html += "if (key === 'starthour') element.value = data.ledSchedule.startHour;";
+  html += "else if (key === 'startminute') element.value = data.ledSchedule.startMinute;";
+  html += "else if (key === 'endhour') element.value = data.ledSchedule.endHour;";
+  html += "else if (key === 'endminute') element.value = data.ledSchedule.endMinute;";
+  html += "} else if (id === 'pumpInterval') element.value = data.pumpInterval;";
+  html += "else if (id === 'pumpDuration') element.value = data.pumpDuration;";
+  html += "}";
+  html += "}";
+  html += "});";
+  html += "}";
+  
+  html += "function toggleOverride(device) {";
+  html += "const currentOverride = device === 'led' ? currentStatus.ledOverride : currentStatus.pumpOverride;";
+  html += "const newState = !currentOverride;";
+  html += "const formData = new FormData();";
+  html += "formData.append(device, newState);";
+  html += "fetch('/api/override', { method: 'POST', body: formData })";
+  html += ".then(response => response.json()).then(data => { console.log('Override změněn:', data); updateStatus(); })";
+  html += ".catch(error => console.error('Chyba při změně override:', error));";
+  html += "}";
+  
+  html += "function saveLedSchedule() {";
+  html += "const formData = new FormData();";
+  html += "formData.append('device', 'led');";
+  html += "formData.append('startHour', document.getElementById('ledStartHour').value);";
+  html += "formData.append('startMinute', document.getElementById('ledStartMinute').value);";
+  html += "formData.append('endHour', document.getElementById('ledEndHour').value);";
+  html += "formData.append('endMinute', document.getElementById('ledEndMinute').value);";
+  html += "formData.append('enabled', document.getElementById('ledEnabled').checked);";
+  html += "fetch('/api/schedule', { method: 'POST', body: formData })";
+  html += ".then(response => response.json()).then(data => { alert('Nastavení LED uloženo!'); isEditing = false; updateStatus(); })";
+  html += ".catch(error => { console.error('Chyba při ukládání:', error); alert('Chyba při ukládání nastavení!'); });";
+  html += "}";
+  
+  html += "function savePumpSchedule() {";
+  html += "const formData = new FormData();";
+  html += "formData.append('device', 'pump');";
+  html += "formData.append('interval', document.getElementById('pumpInterval').value);";
+  html += "formData.append('duration', document.getElementById('pumpDuration').value);";
+  html += "formData.append('enabled', document.getElementById('pumpEnabled').checked);";
+  html += "fetch('/api/schedule', { method: 'POST', body: formData })";
+  html += ".then(response => response.json()).then(data => { alert('Nastavení čerpadla uloženo!'); isEditing = false; updateStatus(); })";
+  html += ".catch(error => { console.error('Chyba při ukládání:', error); alert('Chyba při ukládání nastavení!'); });";
+  html += "}";
+
+  html += "function restartDevice() {";
+  html += "if (confirm('Opravdu chcete restartovat zařízení?')) {";
+  html += "fetch('/api/restart', { method: 'POST' })";
+  html += ".then(response => response.json()).then(data => { alert('Zařízení se restartuje...'); })";
+  html += ".catch(error => console.error('Chyba při restartu:', error));";
+  html += "}";
+  html += "}";
+  
+  html += "</script>";
+  html += "</body></html>";
+  
+  return html;
+}
