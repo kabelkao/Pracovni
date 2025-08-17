@@ -9,8 +9,8 @@
 // Konfigurace pinů
 #define LED_PIN 3
 #define PUMP_PIN 4
-#define BUTTON1_PIN 1  // Override LED
-#define BUTTON2_PIN 0  // Override čerpadlo
+#define BUTTON1_PIN 0  // Override čerpadlo
+#define BUTTON2_PIN 1  // Override LED
 
 // WiFi nastavení
 struct WiFiNetwork {
@@ -27,9 +27,9 @@ const int numNetworks = 2;
 // Webový server
 WebServer server(80);
 
-// NTP klient pro čas
+// NTP klient pro čas - NOVÉ: dynamické nastavení časového pásma
 WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP, "pool.ntp.org", 3600, 60000); // UTC+1 (Česká republika)
+NTPClient timeClient(ntpUDP, "pool.ntp.org", 7200, 60000); // Výchozí UTC+2
 
 // Preferences pro uložení nastavení
 Preferences preferences;
@@ -37,13 +37,16 @@ Preferences preferences;
 // Globální proměnné
 bool ledState = false;
 bool pumpState = false;
-bool ledOverride = false;
-bool pumpOverride = false;
+int ledOverride = 0;   // -1=nucené vypnutí, 0=automatické, 1=nucené zapnutí
+int pumpOverride = 0;  // -1=nucené vypnutí, 0=automatické, 1=nucené zapnutí
 bool button1Pressed = false;
 bool button2Pressed = false;
 unsigned long lastButton1Press = 0;
 unsigned long lastButton2Press = 0;
 const unsigned long debounceDelay = 50;
+
+// NOVÉ: Nastavení časového pásma
+bool isDaylightSaving = true;  // true = letní čas (UTC+2), false = zimní čas (UTC+1)
 
 // Časové nastavení
 struct TimeSchedule {
@@ -57,8 +60,10 @@ struct TimeSchedule {
 TimeSchedule ledSchedule = {8, 0, 20, 0, true};
 int pumpInterval = 30;
 int pumpDuration = 5;
-unsigned long lastPumpRun = 0;
+unsigned long lastPumpCycle = 0;
+unsigned long pumpStartTime = 0;
 bool pumpEnabled = true;
+bool pumpCycleActive = false;
 
 void setup() {
   Serial.begin(115200);
@@ -80,6 +85,9 @@ void setup() {
   // Načtení uložených nastavení
   loadSettings();
   Serial.println("Nastavení načtena");
+  
+  // NOVÉ: Nastavení časového pásma podle uloženého nastavení
+  updateTimezone();
   
   // Pokus o připojení k WiFi
   bool wifiConnected = connectToWiFi();
@@ -120,7 +128,19 @@ void setup() {
   
   server.begin();
   Serial.println("HTTP server spuštěn");
+  
+  // Inicializace časovače čerpadla
+  lastPumpCycle = millis();
+  pumpCycleActive = false;
   Serial.println("=== INICIALIZACE DOKONČENA ===");
+}
+
+// NOVÁ FUNKCE: Aktualizace časového pásma
+void updateTimezone() {
+  int offset = isDaylightSaving ? 7200 : 3600;  // UTC+2 nebo UTC+1
+  timeClient.setTimeOffset(offset);
+  Serial.printf("Časové pásmo nastaveno na: UTC%+d (%s čas)\n", 
+                offset/3600, isDaylightSaving ? "letní" : "zimní");
 }
 
 bool connectToWiFi() {
@@ -193,23 +213,31 @@ void loop() {
 void handleButtons() {
   unsigned long currentTime = millis();
   
+  // Tlačítko 1 (pin 0) - Override čerpadlo
   if (digitalRead(BUTTON1_PIN) == LOW && !button1Pressed) {
     if (currentTime - lastButton1Press > debounceDelay) {
-      ledOverride = !ledOverride;
+      pumpOverride++;
+      if (pumpOverride > 1) pumpOverride = -1; // Cyklus: 0 -> 1 -> -1 -> 0
       button1Pressed = true;
       lastButton1Press = currentTime;
-      Serial.printf("LED Override: %s\n", ledOverride ? "ON" : "OFF");
+      
+      String overrideText = (pumpOverride == 1) ? "ZAPNUTO" : (pumpOverride == -1) ? "VYPNUTO" : "AUTO";
+      Serial.printf("Čerpadlo Override: %s\n", overrideText.c_str());
     }
   } else if (digitalRead(BUTTON1_PIN) == HIGH) {
     button1Pressed = false;
   }
   
+  // Tlačítko 2 (pin 1) - Override LED
   if (digitalRead(BUTTON2_PIN) == LOW && !button2Pressed) {
     if (currentTime - lastButton2Press > debounceDelay) {
-      pumpOverride = !pumpOverride;
+      ledOverride++;
+      if (ledOverride > 1) ledOverride = -1; // Cyklus: 0 -> 1 -> -1 -> 0
       button2Pressed = true;
       lastButton2Press = currentTime;
-      Serial.printf("Čerpadlo Override: %s\n", pumpOverride ? "ON" : "OFF");
+      
+      String overrideText = (ledOverride == 1) ? "ZAPNUTO" : (ledOverride == -1) ? "VYPNUTO" : "AUTO";
+      Serial.printf("LED Override: %s\n", overrideText.c_str());
     }
   } else if (digitalRead(BUTTON2_PIN) == HIGH) {
     button2Pressed = false;
@@ -221,11 +249,14 @@ void controlDevices() {
   int currentMinute = timeClient.getMinutes();
   int currentTimeMinutes = currentHour * 60 + currentMinute;
   
-  // Řízení LED
+  // ŘÍZENÍ LED - override má absolutní prioritu
   bool shouldLedBeOn = false;
-  if (ledOverride) {
-    shouldLedBeOn = true;
-  } else if (ledSchedule.enabled) {
+  
+  if (ledOverride == 1) {
+    shouldLedBeOn = true;   // Nucené zapnutí
+  } else if (ledOverride == -1) {
+    shouldLedBeOn = false;  // Nucené vypnutí
+  } else if (ledSchedule.enabled) {  // ledOverride == 0 = automatické
     int startTime = ledSchedule.startHour * 60 + ledSchedule.startMinute;
     int endTime = ledSchedule.endHour * 60 + ledSchedule.endMinute;
     
@@ -242,25 +273,50 @@ void controlDevices() {
     Serial.printf("LED: %s\n", ledState ? "ZAPNUTO" : "VYPNUTO");
   }
   
-  // Řízení čerpadla
+  // ŘÍZENÍ ČERPADLA - 3 stavy override + správné časování
   bool shouldPumpBeOn = false;
-  if (pumpOverride) {
-    shouldPumpBeOn = true;
-  } else if (pumpEnabled) {
-    unsigned long currentMillis = millis();
-    
-    if (currentMillis - lastPumpRun >= (pumpInterval * 60000UL)) {
-      shouldPumpBeOn = true;
-      if (!pumpState) {
-        lastPumpRun = currentMillis;
-      }
+  unsigned long currentMillis = millis();
+  
+  if (pumpOverride == 1) {
+    shouldPumpBeOn = true;  // Nucené zapnutí
+    // Při override resetovat časovače
+    if (!pumpState) {
+      lastPumpCycle = currentMillis;
+      pumpStartTime = currentMillis;
+      pumpCycleActive = false;
     }
+  } else if (pumpOverride == -1) {
+    shouldPumpBeOn = false; // Nucené vypnutí
+  } else if (pumpEnabled) { // pumpOverride == 0 = automatické
     
-    if (pumpState && (currentMillis - lastPumpRun >= (pumpDuration * 60000UL))) {
-      shouldPumpBeOn = false;
+    // Zjistit stav cyklu
+    unsigned long timeSinceLastCycle = currentMillis - lastPumpCycle;
+    
+    if (!pumpCycleActive) {
+      // Čekáme na start nového cyklu
+      if (timeSinceLastCycle >= (pumpInterval * 60000UL)) {
+        // Čas spustit čerpadlo
+        shouldPumpBeOn = true;
+        pumpStartTime = currentMillis;
+        pumpCycleActive = true;
+        Serial.printf("DEBUG: Spouštím nový cyklus čerpadla (čekalo: %lu min)\n", timeSinceLastCycle / 60000UL);
+      }
+    } else {
+      // Cyklus právě běží
+      unsigned long pumpRunTime = currentMillis - pumpStartTime;
+      
+      if (pumpRunTime < (pumpDuration * 60000UL)) {
+        shouldPumpBeOn = true;  // Pokračovat v běhu
+      } else {
+        shouldPumpBeOn = false; // Čas vypnout a skončit cyklus
+        pumpCycleActive = false;
+        lastPumpCycle = currentMillis;  // Reset pro další interval
+        Serial.printf("DEBUG: Čerpadlo dokončilo cyklus (běželo: %lu s, nyní pauza %d min)\n", pumpRunTime / 1000, pumpInterval);
+      }
     }
   }
   
+  // Aplikovat změny stavu čerpadla
   if (shouldPumpBeOn != pumpState) {
     pumpState = shouldPumpBeOn;
     digitalWrite(PUMP_PIN, pumpState ? LOW : HIGH);
@@ -300,20 +356,29 @@ void setupWebServer() {
     doc["wifiSSID"] = WiFi.SSID();
     doc["wifiRSSI"] = WiFi.RSSI();
     
-    // Přidat informace o čase do spuštění čerpadla
-    if (pumpEnabled && !pumpOverride) {
+    // NOVÉ: Přidat informace o časovém pásmu
+    doc["isDaylightSaving"] = isDaylightSaving;
+    doc["timezoneOffset"] = isDaylightSaving ? 2 : 1;
+    
+    // Přidat informace o čase do spuštění/zastavení čerpadla
+    if (pumpEnabled && pumpOverride == 0) {
       unsigned long currentMillis = millis();
-      unsigned long timeUntilNextPump = (pumpInterval * 60000UL) - (currentMillis - lastPumpRun);
       
-      if (pumpState) {
+      if (pumpCycleActive && pumpState) {
         // Čerpadlo běží - zobrazit zbývající čas
-        unsigned long timeUntilStop = (pumpDuration * 60000UL) - (currentMillis - lastPumpRun);
-        doc["pumpTimeRemaining"] = (int)(timeUntilStop / 1000); // v sekundách
+        unsigned long pumpRunTime = currentMillis - pumpStartTime;
+        unsigned long timeUntilStop = (pumpDuration * 60000UL) - pumpRunTime;
+        doc["pumpTimeRemaining"] = (int)(timeUntilStop / 1000);
         doc["pumpNextAction"] = "stop";
-      } else {
+      } else if (!pumpCycleActive) {
         // Čerpadlo neběží - zobrazit čas do spuštění
-        doc["pumpTimeRemaining"] = (int)(timeUntilNextPump / 1000); // v sekundách
+        unsigned long timeSinceLastCycle = currentMillis - lastPumpCycle;
+        unsigned long timeUntilNextPump = (pumpInterval * 60000UL) - timeSinceLastCycle;
+        doc["pumpTimeRemaining"] = (int)(timeUntilNextPump / 1000);
         doc["pumpNextAction"] = "start";
+      } else {
+        doc["pumpTimeRemaining"] = 0;
+        doc["pumpNextAction"] = "unknown";
       }
     } else {
       doc["pumpTimeRemaining"] = 0;
@@ -327,10 +392,10 @@ void setupWebServer() {
   
   server.on("/api/override", HTTP_POST, [](){
     if (server.hasArg("led")) {
-      ledOverride = server.arg("led") == "true";
+      ledOverride = server.arg("led").toInt();
     }
     if (server.hasArg("pump")) {
-      pumpOverride = server.arg("pump") == "true";
+      pumpOverride = server.arg("pump").toInt();
     }
     server.send(200, "application/json", "{\"status\":\"ok\"}");
   });
@@ -356,6 +421,17 @@ void setupWebServer() {
     server.send(200, "application/json", "{\"status\":\"ok\"}");
   });
 
+  // NOVÉ API: Nastavení časového pásma
+  server.on("/api/timezone", HTTP_POST, [](){
+    if (server.hasArg("isDaylightSaving")) {
+      isDaylightSaving = server.arg("isDaylightSaving") == "true";
+      updateTimezone();
+      saveSettings();
+      Serial.printf("Časové pásmo změněno na: %s čas\n", isDaylightSaving ? "letní" : "zimní");
+    }
+    server.send(200, "application/json", "{\"status\":\"ok\"}");
+  });
+
   server.on("/api/restart", HTTP_POST, [](){
     server.send(200, "application/json", "{\"status\":\"restarting...\"}");
     delay(1000);
@@ -376,6 +452,9 @@ void loadSettings() {
   pumpDuration = preferences.getInt("pump_duration", 5);
   pumpEnabled = preferences.getBool("pump_enabled", true);
   
+  // NOVÉ: Načtení nastavení časového pásma
+  isDaylightSaving = preferences.getBool("daylight_saving", true);
+  
   preferences.end();
 }
 
@@ -392,6 +471,9 @@ void saveSettings() {
   preferences.putInt("pump_duration", pumpDuration);
   preferences.putBool("pump_enabled", pumpEnabled);
   
+  // NOVÉ: Uložení nastavení časového pásma
+  preferences.putBool("daylight_saving", isDaylightSaving);
+  
   preferences.end();
 }
 
@@ -405,23 +487,27 @@ String getIndexHTML() {
   html += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">";
   html += "<title>Hydroponie - Ovládání</title>";
   html += "<style>";
+  
+  // CSS stylování
   html += "body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; background: linear-gradient(135deg, #667eea, #764ba2); min-height: 100vh; color: #333; }";
-  html += ".container { max-width: 800px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); overflow: hidden; }";
+  html += ".container { max-width: 800px; margin: 0 auto; background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0,2); overflow: hidden; }";
   html += ".header { background: linear-gradient(45deg, #4CAF50, #45a049); color: white; padding: 30px 20px; text-align: center; }";
-  html += ".header h1 { margin: 0; font-size: 2.5em; font-weight: 300; }";
-  html += ".time-display { font-size: 1.5em; margin-top: 10px; opacity: 0.9; }";
-  html += ".wifi-info { font-size: 0.9em; margin-top: 5px; opacity: 0.8; }";
+  html += ".header h1 { margin: 0; font-size: 2,5em; font-weight: 300; }";
+  html += ".time-display { font-size: 1,5em; margin-top: 10px; opacity: 0,9; }";
+  html += ".wifi-info { font-size: 0,9em; margin-top: 5px; opacity: 0,8; }";
   html += ".content { padding: 30px; }";
   html += ".section { margin-bottom: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px; border-left: 4px solid #4CAF50; }";
-  html += ".section h2 { margin-top: 0; color: #2c3e50; font-size: 1.3em; }";
+  html += ".section h2 { margin-top: 0; color: #2c3e50; font-size: 1,3em; }";
   html += ".control-group { display: flex; flex-wrap: wrap; gap: 15px; align-items: center; margin-bottom: 15px; }";
   html += ".control-group label { font-weight: 500; min-width: 100px; }";
   html += ".control-group input { padding: 8px 12px; border: 2px solid #ddd; border-radius: 5px; font-size: 14px; }";
   html += ".control-group input:focus { outline: none; border-color: #4CAF50; }";
-  html += ".button { background: #4CAF50; color: white; border: none; padding: 12px 24px; border-radius: 25px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.3s ease; margin: 5px; }";
-  html += ".button:hover { background: #45a049; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4); }";
-  html += ".button.active { background: #ff6b6b; }";
-  html += ".button.active:hover { background: #ff5252; }";
+  html += ".button { background: #4CAF50; color: white; border: none; padding: 12px 24px; border-radius: 25px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0,3s ease; margin: 5px; }";
+  html += ".button:hover { background: #45a049; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(76, 175, 80, 0,4); }";
+  html += ".button.force-on { background: #ff6b6b; }";
+  html += ".button.force-on:hover { background: #ff5252; }";
+  html += ".button.force-off { background: #757575; }";
+  html += ".button.force-off:hover { background: #616161; }";
   html += ".button.warning { background: #ff9800; }";
   html += ".button.warning:hover { background: #e68900; }";
   html += ".status { display: inline-block; padding: 5px 15px; border-radius: 20px; font-weight: 500; margin-left: 10px; }";
@@ -431,9 +517,13 @@ String getIndexHTML() {
   html += ".time-input input { width: 60px; }";
   html += ".device-status { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }";
   html += ".ap-mode-warning { background: #fff3cd; border: 2px solid #ffeaa7; border-radius: 10px; padding: 20px; margin-bottom: 20px; text-align: center; }";
-  html += ".pump-timer { font-size: 0.9em; color: #666; margin-left: 10px; }";
+  html += ".pump-timer { font-size: 0,9em; color: #666; margin-left: 10px; }";
   html += ".editing { background: #fff9c4 !important; border: 2px solid #f39c12 !important; }";
+  html += ".timezone-info { font-size: 0,8em; color: #666; margin-top: 5px; }";
+  html += ".timezone-toggle { background: #17a2b8; }";
+  html += ".timezone-toggle:hover { background: #138496; }";
   html += "@media (max-width: 600px) { .control-group { flex-direction: column; align-items: stretch; } .control-group label { min-width: auto; } }";
+  
   html += "</style></head>";
   
   html += "<body>";
@@ -441,6 +531,7 @@ String getIndexHTML() {
   html += "<div class=\"header\">";
   html += "<h1>🌱 Hydroponie</h1>";
   html += "<div class=\"time-display\" id=\"currentTime\">--:--:--</div>";
+  html += "<div class=\"timezone-info\" id=\"timezoneInfo\">Načítám časové pásmo...</div>";
   html += "<div class=\"wifi-info\" id=\"wifiInfo\">Načítám...</div>";
   html += "</div>";
   
@@ -455,15 +546,24 @@ String getIndexHTML() {
     html += "</div>";
   }
   
+  // NOVÁ SEKCE: Nastavení času
+  html += "<div class=\"section\">";
+  html += "<h2>⏰ Nastavení času</h2>";
+  html += "<div class=\"device-status\">";
+  html += "<div>Časové pásmo: <span id=\"timezoneDisplay\">Načítám...</span></div>";
+  html += "<button class=\"button timezone-toggle\" id=\"timezoneButton\" onclick=\"toggleTimezone()\">Přepnout na zimní čas</button>";
+  html += "</div>";
+  html += "</div>";
+  
   html += "<div class=\"section\">";
   html += "<h2>📊 Aktuální stav</h2>";
   html += "<div class=\"device-status\">";
   html += "<div>💡 LED pásek: <span class=\"status off\" id=\"ledStatus\">VYPNUTO</span></div>";
-  html += "<button class=\"button\" id=\"ledOverride\" onclick=\"toggleOverride('led')\">Override LED</button>";
+  html += "<button class=\"button\" id=\"ledOverride\" onclick=\"toggleOverride('led')\">Auto LED</button>";
   html += "</div>";
   html += "<div class=\"device-status\">";
   html += "<div>💧 Čerpadlo: <span class=\"status off\" id=\"pumpStatus\">VYPNUTO</span><span class=\"pump-timer\" id=\"pumpTimer\"></span></div>";
-  html += "<button class=\"button\" id=\"pumpOverride\" onclick=\"toggleOverride('pump')\">Override čerpadlo</button>";
+  html += "<button class=\"button\" id=\"pumpOverride\" onclick=\"toggleOverride('pump')\">Auto čerpadlo</button>";
   html += "</div>";
   html += "</div>";
   
@@ -536,6 +636,21 @@ String getIndexHTML() {
   html += "fetch('/api/status').then(response => response.json()).then(data => {";
   html += "currentStatus = data;";
   html += "document.getElementById('currentTime').textContent = data.time;";
+  
+  // NOVÉ: Aktualizace informací o časovém pásmu
+  html += "const timezoneDisplay = document.getElementById('timezoneDisplay');";
+  html += "const timezoneButton = document.getElementById('timezoneButton');";
+  html += "const timezoneInfo = document.getElementById('timezoneInfo');";
+  html += "if (data.isDaylightSaving) {";
+  html += "timezoneDisplay.textContent = 'Letní čas (UTC+2)';";
+  html += "timezoneButton.textContent = '❄️ Přepnout na zimní čas';";
+  html += "timezoneInfo.textContent = '🌞 Letní čas (UTC+2)';";
+  html += "} else {";
+  html += "timezoneDisplay.textContent = 'Zimní čas (UTC+1)';";
+  html += "timezoneButton.textContent = '☀️ Přepnout na letní čas';";
+  html += "timezoneInfo.textContent = '❄️ Zimní čas (UTC+1)';";
+  html += "}";
+  
   html += "if (data.wifiConnected) {";
   html += "document.getElementById('wifiInfo').innerHTML = '📶 ' + data.wifiSSID + ' (' + data.wifiRSSI + ' dBm)';";
   html += "} else {";
@@ -566,8 +681,11 @@ String getIndexHTML() {
   html += "const overrideButton = document.getElementById(device + 'Override');";
   html += "if (state) { statusElement.textContent = 'ZAPNUTO'; statusElement.className = 'status on'; }";
   html += "else { statusElement.textContent = 'VYPNUTO'; statusElement.className = 'status off'; }";
-  html += "if (override) { overrideButton.textContent = 'Zrušit override'; overrideButton.classList.add('active'); }";
-  html += "else { overrideButton.textContent = 'Override ' + (device === 'led' ? 'LED' : 'čerpadlo'); overrideButton.classList.remove('active'); }";
+  
+  html += "overrideButton.classList.remove('force-on', 'force-off');";
+  html += "if (override === 1) { overrideButton.textContent = 'Nucené ZAP'; overrideButton.classList.add('force-on'); }";
+  html += "else if (override === -1) { overrideButton.textContent = 'Nucené VYP'; overrideButton.classList.add('force-off'); }";
+  html += "else { overrideButton.textContent = 'Auto ' + (device === 'led' ? 'LED' : 'čerpadlo'); }";
   html += "}";
   
   html += "function loadFormData(data) {";
@@ -592,9 +710,20 @@ String getIndexHTML() {
   html += "});";
   html += "}";
   
+  // NOVÁ FUNKCE: Přepínání časového pásma
+  html += "function toggleTimezone() {";
+  html += "const newDST = !currentStatus.isDaylightSaving;";
+  html += "const formData = new FormData();";
+  html += "formData.append('isDaylightSaving', newDST);";
+  html += "fetch('/api/timezone', { method: 'POST', body: formData })";
+  html += ".then(response => response.json()).then(data => { console.log('Časové pásmo změněno:', data); updateStatus(); })";
+  html += ".catch(error => console.error('Chyba při změně časového pásma:', error));";
+  html += "}";
+  
   html += "function toggleOverride(device) {";
   html += "const currentOverride = device === 'led' ? currentStatus.ledOverride : currentStatus.pumpOverride;";
-  html += "const newState = !currentOverride;";
+  html += "let newState = currentOverride + 1;";
+  html += "if (newState > 1) newState = -1;";
   html += "const formData = new FormData();";
   html += "formData.append(device, newState);";
   html += "fetch('/api/override', { method: 'POST', body: formData })";
