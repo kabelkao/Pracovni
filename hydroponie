@@ -5,6 +5,7 @@
 #include <WiFiUdp.h>
 #include <Preferences.h>
 #include <ArduinoJson.h>
+#include <HTTPClient.h>
 
 // Konfigurace pinů
 #define LED_PIN 3
@@ -19,6 +20,9 @@
 // Čerpadlo
 #define LED_AUTOMAT_CERPADLO_PIN  20  // zelená LED pro automat čerpadlo
 #define LED_MANUAL_CERPADLO_PIN   21  // žlutá LED pro manuál čerpadlo
+
+// --- NOVÉ: adresa pro tmep.cz ---
+String tmepUrl = "http://fnuygx-h4ygtk.tmep.cz/?"; // DOPLŇ SVOU ADRESU!
 
 // WiFi nastavení
 struct WiFiNetwork {
@@ -53,6 +57,10 @@ unsigned long lastButton1Press = 0;
 unsigned long lastButton2Press = 0;
 const unsigned long debounceDelay = 50;
 
+// NOVÉ: sledování posledního odeslaného stavu
+int lastLedStatusCode = -1;
+int lastPumpStatusCode = -1;
+
 // NOVÉ: Nastavení časového pásma
 bool isDaylightSaving = true;  // true = letní čas (UTC+2), false = zimní čas (UTC+1)
 
@@ -72,6 +80,39 @@ unsigned long lastPumpCycle = 0;
 unsigned long pumpStartTime = 0;
 bool pumpEnabled = true;
 bool pumpCycleActive = false;
+
+// --- NOVÉ: funkce pro kód stavu (0–3) ---
+int getStatusCode(bool isOn, int override) {
+  if (override == 0) return isOn ? 1 : 0;
+  if (override == 1) return isOn ? 3 : 2;
+  if (override == -1) return 2; // vypnuto ručně (i kdyby relé bylo náhodně sepnuté)
+  return 0; // bezpečná default, nemělo by nastat
+}
+
+// --- NOVÉ: odeslání stavu na tmep.cz ---
+void sendTmepStatus(int ledCode, int pumpCode) {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    String url = tmepUrl +
+      "osvetleni=" + String(ledCode) +
+      "&cerpadlo=" + String(pumpCode) +
+      "&rssi=" + String(WiFi.RSSI());
+    Serial.println("Odesílám na tmep.cz: " + url);
+    http.begin(url.c_str());
+    int httpCode = http.GET();
+    if (httpCode > 0) {
+      Serial.print("Odpověď tmep.cz: ");
+      Serial.println(httpCode);
+      // (Volitelně: načíst odpověď)
+    } else {
+      Serial.print("Chyba HTTP: ");
+      Serial.println(httpCode);
+    }
+    http.end();
+  } else {
+    Serial.println("WiFi není připojena, neodesílám na tmep.cz.");
+  }
+}
 
 void setup() {
   Serial.begin(115200);
@@ -153,6 +194,10 @@ void setup() {
   lastPumpCycle = millis();
   pumpCycleActive = false;
   Serial.println("=== INICIALIZACE DOKONČENA ===");
+
+  // NOVÉ: Inicializace výchozího kódu pro stav
+  lastLedStatusCode = getStatusCode(ledState, ledOverride);
+  lastPumpStatusCode = getStatusCode(pumpState, pumpOverride);
 }
 
 void updateStatusLEDs() {
@@ -285,6 +330,7 @@ void handleButtons() {
   }
 }
 
+// --- UPRAVENO: Odeslání stavu na tmep.cz při změně ---
 void controlDevices() {
   int currentHour = timeClient.getHours();
   int currentMinute = timeClient.getMinutes();
@@ -308,10 +354,15 @@ void controlDevices() {
     }
   }
   
-  if (shouldLedBeOn != ledState) {
+  int ledCode = getStatusCode(shouldLedBeOn, ledOverride);
+  // Pokud je změna stavu, zapíšeme a odesíláme na tmep.cz
+  if (shouldLedBeOn != ledState || ledCode != lastLedStatusCode) {
     ledState = shouldLedBeOn;
     digitalWrite(LED_PIN, ledState ? LOW : HIGH);
     Serial.printf("LED: %s\n", ledState ? "ZAPNUTO" : "VYPNUTO");
+    sendTmepStatus(ledCode, getStatusCode(pumpState, pumpOverride)); // Odeslat aktuální stav obou
+    lastLedStatusCode = ledCode;
+    lastPumpStatusCode = getStatusCode(pumpState, pumpOverride); // synchronizace
   }
   
   // ŘÍZENÍ ČERPADLA - 3 stavy override + správné časování
@@ -357,11 +408,14 @@ void controlDevices() {
     }
   }
   
-  // Aplikovat změny stavu čerpadla
-  if (shouldPumpBeOn != pumpState) {
+  int pumpCode = getStatusCode(shouldPumpBeOn, pumpOverride);
+  if (shouldPumpBeOn != pumpState || pumpCode != lastPumpStatusCode) {
     pumpState = shouldPumpBeOn;
     digitalWrite(PUMP_PIN, pumpState ? LOW : HIGH);
     Serial.printf("Čerpadlo: %s\n", pumpState ? "ZAPNUTO" : "VYPNUTO");
+    sendTmepStatus(getStatusCode(ledState, ledOverride), pumpCode); // Odeslat aktuální stav obou
+    lastPumpStatusCode = pumpCode;
+    lastLedStatusCode = getStatusCode(ledState, ledOverride); // synchronizace
   }
 }
 
