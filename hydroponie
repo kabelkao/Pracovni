@@ -12,6 +12,14 @@
 #define BUTTON1_PIN 0  // Override čerpadlo
 #define BUTTON2_PIN 1  // Override LED
 
+// Osvětlení
+#define LED_AUTOMAT_OSVETLENI_PIN 5  // zelená LED pro automat osvětlení
+#define LED_MANUAL_OSVETLENI_PIN  6  // žlutá LED pro manuál osvětlení
+
+// Čerpadlo
+#define LED_AUTOMAT_CERPADLO_PIN  20  // zelená LED pro automat čerpadlo
+#define LED_MANUAL_CERPADLO_PIN   21  // žlutá LED pro manuál čerpadlo
+
 // WiFi nastavení
 struct WiFiNetwork {
   const char* ssid;
@@ -77,10 +85,22 @@ void setup() {
   pinMode(BUTTON1_PIN, INPUT_PULLUP);
   pinMode(BUTTON2_PIN, INPUT_PULLUP);
   
+  // --- Inicializace nových LED pinů ---
+  pinMode(LED_AUTOMAT_OSVETLENI_PIN, OUTPUT);
+  pinMode(LED_MANUAL_OSVETLENI_PIN, OUTPUT);
+  pinMode(LED_AUTOMAT_CERPADLO_PIN, OUTPUT);
+  pinMode(LED_MANUAL_CERPADLO_PIN, OUTPUT);
+  
   // Vypnutí výstupů na začátku (HIGH = relé vypnuto)
   digitalWrite(LED_PIN, HIGH);
   digitalWrite(PUMP_PIN, HIGH);
   Serial.println("Piny inicializovány");
+
+  // --- Zhasnout všechny indikátory režimu na startu ---
+  digitalWrite(LED_AUTOMAT_OSVETLENI_PIN, LOW);
+  digitalWrite(LED_MANUAL_OSVETLENI_PIN, LOW);
+  digitalWrite(LED_AUTOMAT_CERPADLO_PIN, LOW);
+  digitalWrite(LED_MANUAL_CERPADLO_PIN, LOW);
   
   // Načtení uložených nastavení
   loadSettings();
@@ -133,6 +153,26 @@ void setup() {
   lastPumpCycle = millis();
   pumpCycleActive = false;
   Serial.println("=== INICIALIZACE DOKONČENA ===");
+}
+
+void updateStatusLEDs() {
+  // --- Osvětlení ---
+  if (ledOverride == 0) { // automat
+    digitalWrite(LED_AUTOMAT_OSVETLENI_PIN, HIGH);   // zapnout zelenou LED
+    digitalWrite(LED_MANUAL_OSVETLENI_PIN, LOW);     // zhasnout žlutou LED
+  } else { // manuál
+    digitalWrite(LED_AUTOMAT_OSVETLENI_PIN, LOW);    // zhasnout zelenou LED
+    digitalWrite(LED_MANUAL_OSVETLENI_PIN, HIGH);    // zapnout žlutou LED
+  }
+
+  // --- Čerpadlo ---
+  if (pumpOverride == 0) { // automat
+    digitalWrite(LED_AUTOMAT_CERPADLO_PIN, HIGH);    // zapnout zelenou LED
+    digitalWrite(LED_MANUAL_CERPADLO_PIN, LOW);      // zhasnout žlutou LED
+  } else { // manuál
+    digitalWrite(LED_AUTOMAT_CERPADLO_PIN, LOW);     // zhasnout zelenou LED
+    digitalWrite(LED_MANUAL_CERPADLO_PIN, HIGH);     // zapnout žlutou LED
+  }
 }
 
 // NOVÁ FUNKCE: Aktualizace časového pásma
@@ -207,6 +247,7 @@ void loop() {
   
   handleButtons();
   controlDevices();
+  updateStatusLEDs();
   delay(100);
 }
 
