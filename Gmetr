@@ -3,10 +3,8 @@
  * Autor: kabelkao
  * Komunikace: ČESKY
  * 
- * OPTIMALIZACE:
- * - Komprimovaná lookup table (úspora 67% RAM)
- * - Rychlejší vykreslování (jen dotčené oblasti)
- * - Vyčištěné konstanty a funkce
+ * USB CDC On Boot: Enabled
+ * ESP32C3 Devmodule
  */
 
 #include <Arduino_GFX_Library.h>
