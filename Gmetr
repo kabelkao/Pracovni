@@ -382,7 +382,7 @@ void drawGValue(float g) {
   
   const char* label = "x10";
   int labelW = strlen(label) * 6;
-  gfx->setCursor(CENTER_X - labelW / 2, CENTER_Y + 16);
+  gfx->setCursor(CENTER_X - labelW / 2, CENTER_Y + 20);
   gfx->print(label);
 }
 
