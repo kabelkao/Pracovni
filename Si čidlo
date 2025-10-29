@@ -24,7 +24,7 @@ USB CDC onboot = enabled
 
 static Adafruit_SHT4x sht4 = Adafruit_SHT4x();
 
-String serverName = "http://jknmw4-wp8n5a.tmep.cz/index.php?";
+String serverName = "http://ff72ym-2kmvfn.tmep.cz/index.php?";
 
 void setup() {
   Serial.begin(115200);
