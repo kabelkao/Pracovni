@@ -1,0 +1,178 @@
+/*
+LaskaKit ESP32-C3 LPkit v3.2
+SHT 40
+LiPol
+Data na TMEP.cz
+WiFiManager
+Deep Sleep 30 minut
+USB CDC onboot = enabled
+*/
+
+#include <WiFi.h>
+#include <esp_wifi.h>
+#include <HTTPClient.h>
+#include <SPI.h>
+#include <Wire.h>
+#include <WiFiManager.h>
+#include "Adafruit_SHT4x.h"
+
+#define ADCBpin 0
+#define bDeviderRatio 1.7693877551
+
+// Deep sleep na 30 minut v mikrosekundách
+#define SLEEP_TIME 30ULL * 60ULL * 1000000ULL  // 30 minut
+
+static Adafruit_SHT4x sht4 = Adafruit_SHT4x();
+
+String serverName = "http://jknmw4-wp8n5a.tmep.cz/index.php?";
+
+void setup() {
+  Serial.begin(115200);
+  delay(100);
+  
+  Serial.println("\n--- Start měření ---");
+  
+  // I2C sběrnice pro čidlo teploty a vlhkosti
+  Wire.begin(8, 10);
+  delay(50);
+  
+  // Inicializace SHT40 s kontrolou
+  if (!sht4.begin()) {
+    Serial.println("❌ SHT40 senzor nenalezen!");
+    goToSleep();
+    return;
+  }
+  
+  Serial.println("✓ SHT40 senzor inicializován");
+  sht4.setPrecision(SHT4X_HIGH_PRECISION); // vysoká přesnost měření
+  sht4.setHeater(SHT4X_NO_HEATER); // bez interního ohřívače
+
+  // WiFiManager s timeoutem
+  WiFiManager wifiManager;
+  wifiManager.setConfigPortalTimeout(180); // 3 minuty timeout
+  
+  Serial.println("Připojování k WiFi...");
+  
+  // Automatické připojení nebo konfigurační portál
+  if (!wifiManager.autoConnect("ESP32-LPkit-Config")) {
+    Serial.println("❌ Selhalo připojení WiFi - restart");
+    delay(1000);
+    ESP.restart();
+  }
+
+  Serial.println("✓ Připojeno k WiFi");
+  Serial.print("IP adresa: ");
+  Serial.println(WiFi.localIP());
+  Serial.print("RSSI: ");
+  Serial.print(WiFi.RSSI());
+  Serial.println(" dBm");
+
+  // Měření a odeslání dat
+  measureAndSend();
+  
+  // Přechod do deep sleep
+  goToSleep();
+}
+
+void loop() {
+  // Loop se nikdy nespustí kvůli deep sleep
+}
+
+void measureAndSend() {
+  /* MĚŘENÍ NAPĚTÍ AKUMULÁTORU */
+  float bat_voltage = analogReadMilliVolts(ADCBpin) * bDeviderRatio / 1000.0;
+  Serial.print("Napětí akumulátoru: ");
+  Serial.print(bat_voltage, 2);
+  Serial.println(" V");
+  
+  // Kontrola kritického napětí
+  if (bat_voltage < 3.0) {
+    Serial.println("⚠️ VAROVÁNÍ: Nízké napětí baterie!");
+  }
+  /*--------------------------*/
+
+  /* MĚŘENÍ SÍLY WiFi */
+  int rssi = WiFi.RSSI();
+  Serial.print("WiFi signál: ");
+  Serial.print(rssi);
+  Serial.println(" dBm");
+  /*------------------*/
+
+  /* ČIDLO TEPLOTY A VLHKOSTI */
+  sensors_event_t humidity, temp;
+  
+  uint32_t timestamp = millis();
+  sht4.getEvent(&humidity, &temp); // čekání na aktuální data
+  
+  float temperature = temp.temperature;
+  float humidityValue = humidity.relative_humidity;
+  
+  Serial.print("Teplota: ");
+  Serial.print(temperature, 1);
+  Serial.println(" °C");
+  Serial.print("Vlhkost: ");
+  Serial.print(humidityValue, 1);
+  Serial.println(" % rH");
+  Serial.print("Čas měření: ");
+  Serial.print(millis() - timestamp);
+  Serial.println(" ms");
+  /*--------------------------*/
+
+  /* ODESLÁNÍ DAT NA TMEP.cz */
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    
+    // Sestavení URL s parametry
+    String serverPath = serverName + 
+                       "teplota=" + String(temperature, 2) + 
+                       "&vlhkost=" + String(humidityValue, 2) + 
+                       "&v=" + String(bat_voltage, 2) + 
+                       "&rssi=" + String(rssi);
+    
+    Serial.println("Odesílám data:");
+    Serial.println(serverPath);
+    
+    // Začátek HTTP spojení
+    http.begin(serverPath.c_str());
+    http.setTimeout(10000); // 10 sekund timeout
+    
+    // HTTP GET request
+    int httpResponseCode = http.GET();
+    
+    if (httpResponseCode > 0) {
+      Serial.print("✓ HTTP Response code: ");
+      Serial.println(httpResponseCode);
+      String payload = http.getString();
+      Serial.println(payload);
+    } else {
+      Serial.print("❌ Error code: ");
+      Serial.println(httpResponseCode);
+      Serial.println(http.errorToString(httpResponseCode));
+    }
+    
+    // Uvolnění zdrojů
+    http.end();
+  } else {
+    Serial.println("❌ WiFi odpojeno");
+  }
+  /*----------------------------*/
+  
+  delay(100); // Krátká pauza před spaním
+}
+
+void goToSleep() {
+  Serial.println("\n💤 Přechod do deep sleep na 30 minut");
+  Serial.flush(); // Počkej na dokončení sériové komunikace
+  
+  // Odpojení WiFi pro úsporu energie
+  WiFi.disconnect(true);
+  WiFi.mode(WIFI_OFF);
+  
+  // Nastavení deep sleep na 30 minut
+  esp_sleep_enable_timer_wakeup(SLEEP_TIME);
+  
+  delay(100);
+  
+  // Spuštění deep sleep
+  esp_deep_sleep_start();
+}
