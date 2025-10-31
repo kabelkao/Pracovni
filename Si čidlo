@@ -1,11 +1,17 @@
 /*
 LaskaKit ESP32-C3 LPkit v3.2
 SHT 40
-LiPol
+LiPol 1500 mAh
 Data na TMEP.cz
 WiFiManager
-Deep Sleep 30 minut
+Deep Sleep 30 minut (změnitelné)
 USB CDC onboot = enabled
+
+Optimalizace:
+- Logování času běhu
+- Agresivní vypnutí WiFi
+- Kontrola napětí baterie s adaptivním spánkem
+- Zkrácené timeouty
 */
 
 #include <WiFi.h>
@@ -19,8 +25,13 @@ USB CDC onboot = enabled
 #define ADCBpin 0
 #define bDeviderRatio 1.7693877551
 
-// Deep sleep na 30 minut v mikrosekundách
-#define SLEEP_TIME 30ULL * 60ULL * 1000000ULL  // 30 minut
+// Deep sleep - ZMĚŇ NA 1 PRO TESTOVÁNÍ (v minutách)
+#define SLEEP_MINUTES 30  // ← Změň na 1 pro test
+#define SLEEP_TIME SLEEP_MINUTES * 60ULL * 1000000ULL
+
+// Kritické napětí pro prodloužení spánku
+#define LOW_VOLTAGE_THRESHOLD 3.5    // Pokud je napětí pod touto hodnotou
+#define LOW_VOLTAGE_SLEEP_HOURS 2    // Spí 2 hodiny místo 30 minut
 
 static Adafruit_SHT4x sht4 = Adafruit_SHT4x();
 
@@ -30,7 +41,30 @@ void setup() {
   Serial.begin(115200);
   delay(100);
   
-  Serial.println("\n--- Start měření ---");
+  unsigned long startTime = millis();
+  
+  Serial.println("\n╔════════════════════════════════════╗");
+  Serial.println("║   ESP32-C3 LPkit - Start měření   ║");
+  Serial.println("╚════════════════════════════════════╝");
+  
+  // NEJDŘÍV KONTROLA NAPĚTÍ
+  float bat_voltage = checkBatteryVoltage();
+  
+  // Pokud je napětí kritické, prodlouž spánek
+  if (bat_voltage > 0 && bat_voltage < LOW_VOLTAGE_THRESHOLD) {
+    Serial.println("\n⚠️  KRITICKÉ NAPĚTÍ BATERIE!");
+    Serial.print("   Prodlužuji spánek na ");
+    Serial.print(LOW_VOLTAGE_SLEEP_HOURS);
+    Serial.println(" hodiny");
+    
+    unsigned long runtime = millis() - startTime;
+    Serial.print("\n⏱️  Celkový čas běhu: ");
+    Serial.print(runtime);
+    Serial.println(" ms");
+    
+    goToSleep(LOW_VOLTAGE_SLEEP_HOURS * 60); // Převod na minuty
+    return;
+  }
   
   // I2C sběrnice pro čidlo teploty a vlhkosti
   Wire.begin(8, 10);
@@ -39,87 +73,131 @@ void setup() {
   // Inicializace SHT40 s kontrolou
   if (!sht4.begin()) {
     Serial.println("❌ SHT40 senzor nenalezen!");
-    goToSleep();
+    unsigned long runtime = millis() - startTime;
+    Serial.print("⏱️  Čas běhu před spaním: ");
+    Serial.print(runtime);
+    Serial.println(" ms");
+    goToSleep(SLEEP_MINUTES);
     return;
   }
   
   Serial.println("✓ SHT40 senzor inicializován");
-  sht4.setPrecision(SHT4X_HIGH_PRECISION); // vysoká přesnost měření
-  sht4.setHeater(SHT4X_NO_HEATER); // bez interního ohřívače
+  sht4.setPrecision(SHT4X_HIGH_PRECISION);
+  sht4.setHeater(SHT4X_NO_HEATER);
 
-  // WiFiManager s timeoutem
+  // WiFiManager s kratšími timeouty
   WiFiManager wifiManager;
-  wifiManager.setConfigPortalTimeout(180); // 3 minuty timeout
+  wifiManager.setConfigPortalTimeout(60);  // 60 sekund na konfiguraci (pokud není uložená síť)
+  wifiManager.setConnectTimeout(20);        // 20 sekund na připojení k uložené síti
   
-  Serial.println("Připojování k WiFi...");
+  Serial.println("\n📡 Připojování k WiFi...");
+  
+  unsigned long wifiStartTime = millis();
   
   // Automatické připojení nebo konfigurační portál
   if (!wifiManager.autoConnect("ESP32-LPkit-Config")) {
-    Serial.println("❌ Selhalo připojení WiFi - restart");
+    Serial.println("❌ Selhalo připojení WiFi");
+    unsigned long runtime = millis() - startTime;
+    Serial.print("⏱️  Čas běhu: ");
+    Serial.print(runtime);
+    Serial.println(" ms");
+    Serial.println("   Restartuji...");
     delay(1000);
     ESP.restart();
   }
 
+  unsigned long wifiConnectTime = millis() - wifiStartTime;
+  
   Serial.println("✓ Připojeno k WiFi");
-  Serial.print("IP adresa: ");
+  Serial.print("   IP adresa: ");
   Serial.println(WiFi.localIP());
-  Serial.print("RSSI: ");
+  Serial.print("   RSSI: ");
   Serial.print(WiFi.RSSI());
   Serial.println(" dBm");
+  Serial.print("   Čas připojení: ");
+  Serial.print(wifiConnectTime);
+  Serial.println(" ms");
 
   // Měření a odeslání dat
-  measureAndSend();
+  measureAndSend(bat_voltage);
+  
+  // Vypočítej celkový čas běhu
+  unsigned long runtime = millis() - startTime;
+  Serial.print("\n⏱️  CELKOVÝ ČAS BĚHU: ");
+  Serial.print(runtime);
+  Serial.println(" ms");
+  Serial.print("   (");
+  Serial.print(runtime / 1000.0, 1);
+  Serial.println(" sekund)");
   
   // Přechod do deep sleep
-  goToSleep();
+  goToSleep(SLEEP_MINUTES);
 }
 
 void loop() {
   // Loop se nikdy nespustí kvůli deep sleep
 }
 
-void measureAndSend() {
-  /* MĚŘENÍ NAPĚTÍ AKUMULÁTORU */
+float checkBatteryVoltage() {
   float bat_voltage = analogReadMilliVolts(ADCBpin) * bDeviderRatio / 1000.0;
-  Serial.print("Napětí akumulátoru: ");
+  
+  Serial.println("\n🔋 NAPĚTÍ BATERIE");
+  Serial.print("   Napětí: ");
   Serial.print(bat_voltage, 2);
   Serial.println(" V");
   
-  // Kontrola kritického napětí
-  if (bat_voltage < 3.0) {
-    Serial.println("⚠️ VAROVÁNÍ: Nízké napětí baterie!");
+  // Procentuální odhad (LiPol 3.0V = 0%, 4.2V = 100%)
+  float percent = (bat_voltage - 3.0) / 1.2 * 100.0;
+  if (percent > 100) percent = 100;
+  if (percent < 0) percent = 0;
+  
+  Serial.print("   Odhad: ~");
+  Serial.print(percent, 0);
+  Serial.println(" %");
+  
+  if (bat_voltage < 3.3) {
+    Serial.println("   ⚠️  VAROVÁNÍ: Nízké napětí!");
+  } else if (bat_voltage < LOW_VOLTAGE_THRESHOLD) {
+    Serial.println("   ⚠️  Kritická úroveň!");
   }
-  /*--------------------------*/
+  
+  return bat_voltage;
+}
 
+void measureAndSend(float bat_voltage) {
   /* MĚŘENÍ SÍLY WiFi */
   int rssi = WiFi.RSSI();
-  Serial.print("WiFi signál: ");
+  Serial.println("\n📶 WIFI SIGNÁL");
+  Serial.print("   RSSI: ");
   Serial.print(rssi);
   Serial.println(" dBm");
   /*------------------*/
 
   /* ČIDLO TEPLOTY A VLHKOSTI */
+  Serial.println("\n🌡️  MĚŘENÍ TEPLOTY A VLHKOSTI");
   sensors_event_t humidity, temp;
   
   uint32_t timestamp = millis();
-  sht4.getEvent(&humidity, &temp); // čekání na aktuální data
+  sht4.getEvent(&humidity, &temp);
+  uint32_t measureTime = millis() - timestamp;
   
   float temperature = temp.temperature;
   float humidityValue = humidity.relative_humidity;
   
-  Serial.print("Teplota: ");
+  Serial.print("   Teplota: ");
   Serial.print(temperature, 1);
   Serial.println(" °C");
-  Serial.print("Vlhkost: ");
+  Serial.print("   Vlhkost: ");
   Serial.print(humidityValue, 1);
   Serial.println(" % rH");
-  Serial.print("Čas měření: ");
-  Serial.print(millis() - timestamp);
+  Serial.print("   Čas měření: ");
+  Serial.print(measureTime);
   Serial.println(" ms");
   /*--------------------------*/
 
   /* ODESLÁNÍ DAT NA TMEP.cz */
   if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("\n📤 ODESÍLÁNÍ DAT");
     HTTPClient http;
     
     // Sestavení URL s parametry
@@ -129,8 +207,9 @@ void measureAndSend() {
                        "&v=" + String(bat_voltage, 2) + 
                        "&rssi=" + String(rssi);
     
-    Serial.println("Odesílám data:");
-    Serial.println(serverPath);
+    Serial.println("   URL: " + serverPath);
+    
+    uint32_t httpStartTime = millis();
     
     // Začátek HTTP spojení
     http.begin(serverPath.c_str());
@@ -139,37 +218,60 @@ void measureAndSend() {
     // HTTP GET request
     int httpResponseCode = http.GET();
     
+    uint32_t httpTime = millis() - httpStartTime;
+    
     if (httpResponseCode > 0) {
-      Serial.print("✓ HTTP Response code: ");
+      Serial.print("   ✓ HTTP Response: ");
       Serial.println(httpResponseCode);
       String payload = http.getString();
+      Serial.print("   Odpověď: ");
       Serial.println(payload);
     } else {
-      Serial.print("❌ Error code: ");
+      Serial.print("   ❌ Error code: ");
       Serial.println(httpResponseCode);
+      Serial.print("   Chyba: ");
       Serial.println(http.errorToString(httpResponseCode));
     }
+    
+    Serial.print("   Čas HTTP requestu: ");
+    Serial.print(httpTime);
+    Serial.println(" ms");
     
     // Uvolnění zdrojů
     http.end();
   } else {
-    Serial.println("❌ WiFi odpojeno");
+    Serial.println("\n❌ WiFi odpojeno - data nebyla odeslána");
   }
   /*----------------------------*/
   
-  delay(100); // Krátká pauza před spaním
+  delay(100);
 }
 
-void goToSleep() {
-  Serial.println("\n💤 Přechod do deep sleep na 30 minut");
+void goToSleep(int sleepMinutes) {
+  Serial.println("\n╔════════════════════════════════════╗");
+  Serial.print("║   💤 Deep Sleep: ");
+  Serial.print(sleepMinutes);
+  Serial.print(" min");
+  if (sleepMinutes < 10) Serial.print(" ");
+  if (sleepMinutes < 100) Serial.print(" ");
+  Serial.println("       ║");
+  Serial.println("╚════════════════════════════════════╝");
+  
   Serial.flush(); // Počkej na dokončení sériové komunikace
   
-  // Odpojení WiFi pro úsporu energie
+  // AGRESIVNÍ VYPNUTÍ WiFi
+  HTTPClient().end();  // Uzavři případné otevřené spojení
   WiFi.disconnect(true);
   WiFi.mode(WIFI_OFF);
+  esp_wifi_stop();
+  esp_wifi_deinit();
   
-  // Nastavení deep sleep na 30 minut
-  esp_sleep_enable_timer_wakeup(SLEEP_TIME);
+  // Vypnutí Bluetooth (pokud by byl aktivní)
+  btStop();
+  
+  // Nastavení deep sleep
+  uint64_t sleepTime = sleepMinutes * 60ULL * 1000000ULL;
+  esp_sleep_enable_timer_wakeup(sleepTime);
   
   delay(100);
   
