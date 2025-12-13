@@ -1,4 +1,14 @@
 ** Domácí stanice
+- Laskakit Devkit https://www.laskakit.cz/laskakit-esp32-devkit/?variantId=11481
+- SEN66 https://www.laskakit.cz/senserion-sen66-sin-t-senzor-kvality-ovzdusi/
+- 4.0" 480x320 TFT displej, ST7796, SPI, dotykový https://www.laskakit.cz/4-0--480x320-tft-displej--st7796--spi--dotykovy/
+- 24/7 zobrazení dat z čidla SEN66, předpovědi počasí případně dat z HAOS
+- trvalé napájení
 
 
 ** Venkovní meření PM
+- SEN55 https://www.laskakit.cz/senserion-sen55-sdn-t-opticky-senzor-kvality-ovzdusi/
+- LaskaKit Airboard 8266 https://www.laskakit.cz/laskakit-airboard-8266-deska-pro-mereni-kvality-vzduchu/
+- solární panel (solární nabíječku má deska v sobě)
+- 4000 mAh Li-Pol
+
