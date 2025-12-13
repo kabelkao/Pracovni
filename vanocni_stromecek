@@ -1,0 +1,156 @@
+#include <Adafruit_NeoPixel.h>
+
+#define LED_PIN     1      
+#define NUM_LEDS    48     
+#define MAX_BRIGHTNESS  128   // 50% z 255
+
+Adafruit_NeoPixel strip(NUM_LEDS, LED_PIN, NEO_GRB + NEO_KHZ800);
+
+// Definice stran
+#define SIDE1_START  0
+#define SIDE1_END    15
+#define SIDE1_SIZE   16
+
+#define SIDE2_START  16
+#define SIDE2_END    32
+#define SIDE2_SIZE   17
+
+#define SIDE3_START  33
+#define SIDE3_END    47
+#define SIDE3_SIZE   15
+
+// Nastavení efektu
+#define BASE_BRIGHTNESS  13    // 5% z 255 (0,05 × 255 = 12,75)
+#define WAVE_BRIGHTNESS  255   // 100% intenzita vlny
+#define WAVE_WIDTH       6     // Šířka vlny (počet LED)
+#define WAVE_SPEED       80    // Rychlost vlny (ms mezi kroky)
+
+// Pozice vln pro každou sekci
+float wavePosition1 = 0;
+float wavePosition2 = 0;
+float wavePosition3 = 0;
+
+void setup() {
+  Serial.begin(115200);
+  Serial. println("Duhovy pas - 3 sekce - Start");
+  
+  strip. begin();
+  strip.setBrightness(MAX_BRIGHTNESS);
+  strip.show();
+}
+
+void loop() {
+  // Projdi všechny LED
+  for(int i = 0; i < NUM_LEDS; i++) {
+    // Získej duhovou barvu pro tuto LED
+    uint32_t rainbowColor = getRainbowColor(i);
+    uint8_t r = (rainbowColor >> 16) & 0xFF;
+    uint8_t g = (rainbowColor >> 8) & 0xFF;
+    uint8_t b = rainbowColor & 0xFF;
+    
+    // Vypočítej intenzitu podle toho, ve které sekci LED je
+    uint8_t brightness = BASE_BRIGHTNESS;
+    
+    if(i >= SIDE1_START && i <= SIDE1_END) {
+      brightness = calculateBrightnessForSide(i, SIDE1_START, SIDE1_SIZE, wavePosition1);
+    } else if(i >= SIDE2_START && i <= SIDE2_END) {
+      brightness = calculateBrightnessForSide(i, SIDE2_START, SIDE2_SIZE, wavePosition2);
+    } else if(i >= SIDE3_START && i <= SIDE3_END) {
+      brightness = calculateBrightnessForSide(i, SIDE3_START, SIDE3_SIZE, wavePosition3);
+    }
+    
+    // Aplikuj intenzitu na barvu
+    r = (r * brightness) / 255;
+    g = (g * brightness) / 255;
+    b = (b * brightness) / 255;
+    
+    strip. setPixelColor(i, strip.Color(r, g, b));
+  }
+  
+  strip.show();
+  
+  // Posuň vlny dolů (od vyšších čísel k nižším v každé sekci)
+  wavePosition1 += 0.3;
+  if(wavePosition1 >= SIDE1_SIZE) {
+    wavePosition1 = 0;
+  }
+  
+  wavePosition2 += 0.3;
+  if(wavePosition2 >= SIDE2_SIZE) {
+    wavePosition2 = 0;
+  }
+  
+  wavePosition3 += 0.3;
+  if(wavePosition3 >= SIDE3_SIZE) {
+    wavePosition3 = 0;
+  }
+  
+  delay(WAVE_SPEED);
+}
+
+// ════════════════════════════════════════════════════════════
+// FUNKCE: Získá duhovou barvu pro danou LED pozici
+// ════════════════════════════════════════════════════════════
+uint32_t getRainbowColor(int ledIndex) {
+  // Rozdělí 48 LED na celý spektrum duhy (0-360°)
+  float hue = (ledIndex * 360.0) / NUM_LEDS;
+  
+  return hsvToRgb(hue, 1.0, 1.0);
+}
+
+// ════════════════════════════════════════════════════════════
+// FUNKCE: Vypočítá intenzitu pro LED v dané sekci
+// ════════════════════════════════════════════════════════════
+uint8_t calculateBrightnessForSide(int ledIndex, int sideStart, int sideSize, float wavePos) {
+  // Relativní pozice LED v sekci (0 až sideSize-1)
+  int relativePos = ledIndex - sideStart;
+  
+  // Pozice vlny ve směru dolů (od konce sekce k začátku)
+  // Převrátíme směr: čím větší číslo LED, tím "dřív" vlna přijde
+  float actualWavePos = (sideSize - 1) - wavePos;
+  
+  // Vzdálenost LED od středu vlny
+  float distance = abs(relativePos - actualWavePos);
+  
+  // Pokud je LED uvnitř vlny, zvýš jas
+  if(distance < WAVE_WIDTH / 2.0) {
+    // Plynulý přechod: čím blíž ke středu, tím víc
+    float factor = 1.0 - (distance / (WAVE_WIDTH / 2.0));
+    uint8_t waveBrightness = BASE_BRIGHTNESS + (WAVE_BRIGHTNESS - BASE_BRIGHTNESS) * factor;
+    return waveBrightness;
+  }
+  
+  // Jinak základní jas
+  return BASE_BRIGHTNESS;
+}
+
+// ════════════════════════════════════════════════════════════
+// FUNKCE: Převod HSV na RGB (bez bílé!)
+// ════════════════════════════════════════════════════════════
+uint32_t hsvToRgb(float h, float s, float v) {
+  float c = v * s;
+  float x = c * (1.0 - abs(fmod(h / 60.0, 2.0) - 1.0));
+  float m = v - c;
+  
+  float r1, g1, b1;
+  
+  if(h < 60) {
+    r1 = c; g1 = x; b1 = 0;
+  } else if(h < 120) {
+    r1 = x; g1 = c; b1 = 0;
+  } else if(h < 180) {
+    r1 = 0; g1 = c; b1 = x;
+  } else if(h < 240) {
+    r1 = 0; g1 = x; b1 = c;
+  } else if(h < 300) {
+    r1 = x; g1 = 0; b1 = c;
+  } else {
+    r1 = c; g1 = 0; b1 = x;
+  }
+  
+  uint8_t r = (r1 + m) * 255;
+  uint8_t g = (g1 + m) * 255;
+  uint8_t b = (b1 + m) * 255;
+  
+  return ((uint32_t)r << 16) | ((uint32_t)g << 8) | b;
+}
