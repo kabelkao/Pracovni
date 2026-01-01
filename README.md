@@ -1,4 +1,4 @@
-# Můj Git pro zvěřejňování problémů
+# Pracovní Git
 
 ## Projekty 2026
 
