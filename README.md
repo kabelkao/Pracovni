@@ -2,7 +2,7 @@
 
 ## Projekty 2026
 
-- Domácí displej:
+### Domácí displej:
 -   měření kvality vzduchu
 -   měření teploty
 -   zobrazení hodnot
@@ -10,21 +10,19 @@
 -   odesílání dat na TMEP.CZ
 -   intergrace do HA
 
-- G metr
+### G metr
 -   vyměnit displej
 -   udělat krabičku
 -   otestovat v autě
 
-- Multiboard na zdi za monitorem
+### Multiboard na zdi za monitorem
 -   pověsit HP thin clienta
 -   pověsit zigbee koordinátor
 
-- IKEA viking věc do práce nebo ten starý senzor
+### IKEA viking věc do práce nebo ten starý senzor
 
-- BabyTrains
+### BabyTrains
 
-- Voltmetr na stůl napájený z Ridenu
+### Voltmetr na stůl napájený z Ridenu
 
-- Měření kvality vzduchu SEN55 venku (SI+Lubno)
-
-- 
+### Měření kvality vzduchu SEN55 venku (SI+Lubno)
