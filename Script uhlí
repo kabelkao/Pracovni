@@ -1,0 +1,244 @@
+import adsk.core, adsk.fusion, traceback, random, math
+
+def run(context):
+    ui = None
+    try:
+        app = adsk.core.Application.get()
+        ui  = app.userInterface
+        design = adsk.fusion.Design.cast(app.activeProduct)
+        if not design:  
+            ui.messageBox('Otevři prosím Fusion design a spusť skript znovu.')
+            return
+
+        root = design.rootComponent
+        sel = ui.activeSelections
+        if sel.count < 1:
+            ui.messageBox('Nejdřív vyber 1 nebo více planárních ploch (Face) a pak spusť skript.')
+            return
+
+        # Sesbírej všechny vybrané Face
+        faces = []
+        for i in range(sel.count):
+            entity = sel.item(i).entity
+            face = adsk.fusion.BRepFace.cast(entity)
+            if face:
+                plane = adsk.core.Plane.cast(face.geometry)
+                if plane:
+                    faces.append(face)
+                else:
+                    ui.messageBox(f'Plocha #{i+1} není planární - přeskakuji.')
+            else:
+                ui.messageBox(f'Výběr #{i+1} není Face - přeskakuji.')
+        
+        if len(faces) == 0:
+            ui.messageBox('Žádné platné planární plochy nebyly vybrány.')
+            return
+
+        # --------- SETTINGS ----------
+        density = 0.1              # ← částic na 1 cm²
+        embed_mm = 0.20
+        z_spread_mm = 0.7
+        tilt_x = 0.6
+        tilt_y = 0.6
+        jitter_percent = 40        # ← náhodný posun v mřížce (0-50%)
+        margin_percent = 2         # ← menší margin = víc u okrajů
+        rng_seed = 12345
+        # ----------------------------
+        random.seed(rng_seed)
+
+        def mm_to_cm(v): return v / 10.0
+        def cm_to_mm(v): return v * 10.0
+
+        def find_seed_bodies(names):
+            found = []
+            def scan_comp(cmp):
+                for b in cmp.bRepBodies:
+                    if b.name in names:
+                        found.append(b)
+                for occ in cmp.occurrences:
+                    scan_comp(occ. component)
+            scan_comp(root)
+            return found
+
+        seed_names = {'Seed_1', 'Seed_2', 'Seed_3'}
+        seeds = find_seed_bodies(seed_names)
+        if len(seeds) < 1:
+            ui.messageBox('Nenašel jsem Seed_1.. Seed_3. Pojmenuj seedy a spusť znovu.')
+            return
+
+        occ = root.occurrences. addNewComponent(adsk.core.Matrix3D.create())
+        comp = adsk.fusion.Component.cast(occ.component)
+        comp.name = 'Coal scatter'
+
+        temp = adsk.fusion. TemporaryBRepManager.get()
+        origin = adsk.core.Point3D.create(0,0,0)
+
+        def rot_matrix(ax, ay, az):
+            mx = adsk.core.Matrix3D.create()
+            mx.setToRotation(ax, adsk.core.Vector3D. create(1,0,0), origin)
+            my = adsk.core.Matrix3D.create()
+            my.setToRotation(ay, adsk.core.Vector3D. create(0,1,0), origin)
+            mz = adsk.core.Matrix3D. create()
+            mz.setToRotation(az, adsk.core.Vector3D.create(0,0,1), origin)
+            mx.transformBy(my); mx.transformBy(mz)
+            return mx
+
+        total_created = 0
+        
+        # Pro každou plochu
+        for face_idx, face in enumerate(faces):
+            plane = adsk.core.Plane.cast(face.geometry)
+            
+            p0 = plane.origin
+            n  = plane.normal
+            n. normalize()
+
+            bb = face.boundingBox
+            minPt = bb.minPoint
+            maxPt = bb.maxPoint
+            
+            dx = maxPt.x - minPt.x
+            dy = maxPt.y - minPt.y
+            dz = maxPt.z - minPt.z
+            
+            # Plocha bbox
+            bbox_area_cm2 = max(dx * dy, dy * dz, dx * dz) * 100  # cm²
+            
+            # Počet částic
+            count_per_face = int(bbox_area_cm2 * density)
+            if count_per_face < 1:
+                count_per_face = 1
+            
+            # *** OPRAVA: Menší grid_size pro méně částic ***
+            grid_size = max(3, math.ceil(math.pow(count_per_face, 1. 0/3.0)))
+            
+            margin_x = dx * margin_percent / 100.0
+            margin_y = dy * margin_percent / 100.0
+            margin_z = dz * margin_percent / 100.0
+            
+            x_min = minPt.x + margin_x
+            x_max = maxPt.x - margin_x
+            y_min = minPt.y + margin_y
+            y_max = maxPt.y - margin_y
+            z_min = minPt.z + margin_z
+            z_max = maxPt.z - margin_z
+            
+            # Velikost buňky
+            cell_x = (x_max - x_min) / grid_size if grid_size > 0 else 0
+            cell_y = (y_max - y_min) / grid_size if grid_size > 0 else 0
+            cell_z = (z_max - z_min) / grid_size if grid_size > 0 else 0
+
+            # *** VRÁTIL JSEM project_point_to_plane ***
+            def project_point_to_plane(pt):
+                v = adsk.core.Vector3D.create(
+                    pt.x - p0.x, 
+                    pt.y - p0.y, 
+                    pt.z - p0.z
+                )
+                dist = v.dotProduct(n)
+                return adsk.core.Point3D. create(
+                    pt.x - n.x * dist,
+                    pt.y - n.y * dist,
+                    pt.z - n.z * dist
+                )
+
+            def is_point_on_face(pt):
+                try:
+                    result = face.evaluator.getParameterAtPoint(pt)
+                    if result[0]:  
+                        closest = face.evaluator.getPointAtParameter(result[1])
+                        dist = pt.distanceTo(closest[1])
+                        return dist < 0.001
+                    return False
+                except:
+                    return False
+
+            created = 0
+            
+            # *** 3D GRID (funguje!) ***
+            for i in range(grid_size):
+                for j in range(grid_size):
+                    for k in range(grid_size):
+                        # Střed buňky
+                        cell_center_x = x_min + (i + 0.5) * cell_x
+                        cell_center_y = y_min + (j + 0.5) * cell_y
+                        cell_center_z = z_min + (k + 0.5) * cell_z
+                        
+                        # Jitter
+                        jitter_x = random.uniform(-1, 1) * cell_x * jitter_percent / 100.0
+                        jitter_y = random.uniform(-1, 1) * cell_y * jitter_percent / 100.0
+                        jitter_z = random.uniform(-1, 1) * cell_z * jitter_percent / 100.0
+                        
+                        x = cell_center_x + jitter_x
+                        y = cell_center_y + jitter_y
+                        z = cell_center_z + jitter_z
+                        
+                        random_point = adsk.core. Point3D.create(x, y, z)
+                        point_on_plane = project_point_to_plane(random_point)  # ← KLÍČ! 
+
+                        # Kontrola
+                        if not is_point_on_face(point_on_plane):
+                            continue
+
+                        seed_body = random.choice(seeds)
+                        body_tmp = temp. copy(seed_body)
+
+                        ax = random.uniform(-tilt_x, tilt_x)
+                        ay = random. uniform(-tilt_y, tilt_y)
+                        az = random.uniform(0, 2 * math.pi)
+                        temp.transform(body_tmp, rot_matrix(ax, ay, az))
+
+                        dz_mm = random.uniform(0.0, z_spread_mm)
+                        offset_mm = dz_mm - embed_mm
+
+                        target = adsk.core.Point3D.create(
+                            point_on_plane. x + n.x * mm_to_cm(offset_mm),
+                            point_on_plane.y + n.y * mm_to_cm(offset_mm),
+                            point_on_plane.z + n.z * mm_to_cm(offset_mm)
+                        )
+
+                        bbox = body_tmp.boundingBox
+                        center = adsk.core. Point3D.create(
+                            (bbox.minPoint.x + bbox.maxPoint.x) / 2,
+                            (bbox.minPoint.y + bbox.maxPoint. y) / 2,
+                            (bbox.minPoint.z + bbox.maxPoint.z) / 2
+                        )
+
+                        delta = adsk.core.Vector3D.create(
+                            target.x - center. x,
+                            target.y - center.y,
+                            target.z - center.z
+                        )
+
+                        T = adsk.core.Matrix3D.create()
+                        T. translation = delta
+                        temp. transform(body_tmp, T)
+
+                        bf = comp.features.baseFeatures.add()
+                        bf.startEdit()
+                        b = comp.bRepBodies.add(body_tmp, bf)
+                        b. name = f'Coal_F{face_idx+1}_{created+1:03d}'
+                        bf.finishEdit()
+
+                        created += 1
+                        
+                        # *** Zastaví, když má dost částic ***
+                        if created >= count_per_face:
+                            break
+                    if created >= count_per_face: 
+                        break
+                if created >= count_per_face:
+                    break
+            
+            total_created += created
+
+        ui.messageBox(
+            f'Hotovo!\n'
+            f'Ploch: {len(faces)}\n'
+            f'Celkem částic: {total_created}\n'
+            f'Density:  {density} částic/cm²'
+        )
+
+    except:
+        if ui:
+            ui. messageBox('Chyba:\n{}'.format(traceback.format_exc()))
