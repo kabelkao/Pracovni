@@ -35,12 +35,12 @@ def run(context):
             return
 
         # --------- SETTINGS ----------
-        density = 0.1              # ← částic na 1 cm²
+        density = 0.3              # ← částic na 1 cm²
         embed_mm = 0.20
         z_spread_mm = 0.7
         tilt_x = 0.6
         tilt_y = 0.6
-        jitter_percent = 40        # ← náhodný posun v mřížce (0-50%)
+        jitter_percent = 50        # ← náhodný posun v mřížce (0-50%)
         margin_percent = 2         # ← menší margin = víc u okrajů
         rng_seed = 12345
         # ----------------------------
@@ -110,7 +110,7 @@ def run(context):
                 count_per_face = 1
             
             # *** OPRAVA: Menší grid_size pro méně částic ***
-            grid_size = max(3, math.ceil(math.pow(count_per_face, 1. 0/3.0)))
+            grid_size = max(3, math.ceil(math.pow(count_per_face, 1.0/3.0)))
             
             margin_x = dx * margin_percent / 100.0
             margin_y = dy * margin_percent / 100.0
