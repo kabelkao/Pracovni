@@ -83,7 +83,9 @@
         "orientation": "auto",
         "reduceOptions": {
           "values": false,
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": ""
         },
         "textMode": "value"
@@ -142,7 +144,9 @@
         "orientation": "auto",
         "reduceOptions": {
           "values": false,
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": ""
         },
         "showThresholdLabels": false,
@@ -203,7 +207,9 @@
         "orientation": "auto",
         "reduceOptions": {
           "values": false,
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": ""
         },
         "showThresholdLabels": false,
@@ -269,7 +275,9 @@
         "orientation": "auto",
         "reduceOptions": {
           "values": false,
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": ""
         },
         "textMode": "value"
@@ -324,7 +332,9 @@
         "orientation": "auto",
         "reduceOptions": {
           "values": false,
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": ""
         },
         "showThresholdLabels": false,
@@ -373,7 +383,9 @@
         "orientation": "auto",
         "reduceOptions": {
           "values": false,
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": ""
         },
         "textMode": "value"
@@ -420,7 +432,9 @@
         "orientation": "auto",
         "reduceOptions": {
           "values": false,
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": ""
         },
         "textMode": "name"
@@ -441,6 +455,181 @@
         "w": 24,
         "x": 0,
         "y": 5
+      },
+      "id": 600,
+      "panels": [
+        {
+          "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "center",
+                "cellOptions": {
+                  "type": "color-background"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": -200
+                  },
+                  {
+                    "color": "orange",
+                    "value": -100
+                  },
+                  {
+                    "color": "yellow",
+                    "value": -50
+                  },
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 50
+                  },
+                  {
+                    "color": "orange",
+                    "value": 100
+                  }
+                ]
+              },
+              "unit": "µm",
+              "decimals": 2
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 6
+          },
+          "id": 601,
+          "options": {
+            "showHeader": true,
+            "cellHeight": "lg",
+            "footer": {
+              "show": false
+            }
+          },
+          "targets": [
+            {
+              "expr": "prusa_mbl_adl",
+              "format": "table",
+              "instant": true,
+              "refId": "A"
+            },
+            {
+              "expr": "prusa_mbl_bcl",
+              "format": "table",
+              "instant": true,
+              "refId": "B"
+            },
+            {
+              "expr": "prusa_mbl_cl",
+              "format": "table",
+              "instant": true,
+              "refId": "C"
+            },
+            {
+              "expr": "prusa_mbl_cpl",
+              "format": "table",
+              "instant": true,
+              "refId": "D"
+            },
+            {
+              "expr": "prusa_mbl_dcl",
+              "format": "table",
+              "instant": true,
+              "refId": "E"
+            },
+            {
+              "expr": "prusa_mbl_dz",
+              "format": "table",
+              "instant": true,
+              "refId": "F"
+            },
+            {
+              "expr": "prusa_mbl_fl",
+              "format": "table",
+              "instant": true,
+              "refId": "G"
+            },
+            {
+              "expr": "prusa_mbl_hl",
+              "format": "table",
+              "instant": true,
+              "refId": "H"
+            },
+            {
+              "expr": "prusa_mbl_rl",
+              "format": "table",
+              "instant": true,
+              "refId": "I"
+            },
+            {
+              "expr": "prusa_mbl_lj",
+              "format": "table",
+              "instant": true,
+              "refId": "J"
+            },
+            {
+              "expr": "prusa_mbl_z",
+              "format": "table",
+              "instant": true,
+              "refId": "K"
+            }
+          ],
+          "title": "🗺️ Mesh Bed Leveling Points",
+          "transformations": [
+            {
+              "id": "merge",
+              "options": {}
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true,
+                  "instance": true,
+                  "job": true,
+                  "printer_address": true,
+                  "printer_mac": true,
+                  "__name__": true
+                },
+                "renameByName": {
+                  "Value #A": "ADL",
+                  "Value #B": "BCL",
+                  "Value #C": "CL",
+                  "Value #D": "CPL",
+                  "Value #E": "DCL",
+                  "Value #F": "DZ",
+                  "Value #G": "FL",
+                  "Value #H": "HL",
+                  "Value #I": "RL",
+                  "Value #J": "LJ",
+                  "Value #K": "Z"
+                }
+              }
+            }
+          ],
+          "type": "table"
+        }
+      ],
+      "title": "🗺️ BED MESH LEVELING",
+      "type": "row"
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 6
       },
       "id": 200,
       "panels": [
@@ -503,7 +692,10 @@
                   {
                     "id": "custom.lineStyle",
                     "value": {
-                      "dash": [10, 10],
+                      "dash": [
+                        10,
+                        10
+                      ],
                       "fill": "dash"
                     }
                   },
@@ -524,7 +716,11 @@
           "id": 201,
           "options": {
             "legend": {
-              "calcs": ["lastNotNull", "max", "min"],
+              "calcs": [
+                "lastNotNull",
+                "max",
+                "min"
+              ],
               "displayMode": "table",
               "placement": "bottom",
               "showLegend": true
@@ -611,7 +807,10 @@
           "id": 202,
           "options": {
             "legend": {
-              "calcs": ["lastNotNull", "max"],
+              "calcs": [
+                "lastNotNull",
+                "max"
+              ],
               "displayMode": "table",
               "placement": "bottom",
               "showLegend": true
@@ -687,172 +886,16 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 14
-          },
-          "id": 203,
-          "options": {
-            "legend": {
-              "calcs": ["lastNotNull", "mean"],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "multi",
-              "sort": "none"
-            }
-          },
-          "targets": [
-            {
-              "expr": "prusa_fsensor_ri",
-              "legendFormat": "Sensor Raw Value",
-              "refId": "A"
-            },
-            {
-              "expr": "stddev_over_time(prusa_fsensor_ri[30s])",
-              "legendFormat": "Movement (StdDev 30s)",
-              "refId": "B"
-            }
-          ],
-          "title": "🎯 Filament Sensor Diagnostic",
-          "type": "timeseries"
-        },
-        {
-          "datasource": "Prometheus",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "custom": {
-                "align": "auto",
-                "cellOptions": {
-                  "type": "auto"
-                },
-                "inspect": false
-              },
-              "mappings": [
-                {
-                  "options": {
-                    "1": {
-                      "color": "red",
-                      "text": "⚠️ JAM DETECTED!"
-                    }
-                  },
-                  "type": "value"
-                }
-              ],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 1
-                  }
-                ]
-              }
-            }
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 14
-          },
-          "id": 204,
-          "options": {
-            "cellHeight": "sm",
-            "footer": {
-              "countRows": false,
-              "fields": "",
-              "reducer": ["sum"],
-              "show": false
-            },
-            "showHeader": true
-          },
-          "targets": [
-            {
-              "expr": "rate(prusa_pos_z[30s]) > 0.5 and deriv(prusa_temp_noz[30s]) < -0.5",
-              "format": "table",
-              "instant": true,
-              "legendFormat": "",
-              "refId": "A"
-            }
-          ],
-          "title": "⚠️ JAM ALERT",
-          "transformations": [
-            {
-              "id": "organize",
-              "options": {
-                "excludeByName": {
-                  "Time": true,
-                  "__name__": true
-                },
-                "indexByName": {},
-                "renameByName": {
-                  "Value": "JAM STATUS"
-                }
-              }
-            }
-          ],
-          "type": "table"
-        },
-        {
-          "datasource": "Prometheus",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "tooltip": false,
-                  "viz": false,
-                  "legend": false
-                },
-                "lineInterpolation": "linear",
-                "lineWidth": 2,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": true
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  }
-                ]
-              }
-            }
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
             "y": 22
           },
           "id": 205,
           "options": {
             "legend": {
-              "calcs": ["lastNotNull", "max", "min"],
+              "calcs": [
+                "lastNotNull",
+                "max",
+                "min"
+              ],
               "displayMode": "table",
               "placement": "bottom",
               "showLegend": true
@@ -933,7 +976,9 @@
             "orientation": "auto",
             "reduceOptions": {
               "values": false,
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "fields": ""
             },
             "textMode": "value"
@@ -989,7 +1034,9 @@
             "orientation": "auto",
             "reduceOptions": {
               "values": false,
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "fields": ""
             },
             "textMode": "value"
@@ -1084,7 +1131,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 6
+        "y": 7
       },
       "id": 300,
       "panels": [
@@ -1140,7 +1187,10 @@
           "id": 301,
           "options": {
             "legend": {
-              "calcs": ["lastNotNull", "max"],
+              "calcs": [
+                "lastNotNull",
+                "max"
+              ],
               "displayMode": "table",
               "placement": "bottom",
               "showLegend": true
@@ -1259,7 +1309,10 @@
           "id": 302,
           "options": {
             "legend": {
-              "calcs": ["lastNotNull", "mean"],
+              "calcs": [
+                "lastNotNull",
+                "mean"
+              ],
               "displayMode": "table",
               "placement": "bottom",
               "showLegend": true
@@ -1345,7 +1398,9 @@
           "id": 303,
           "options": {
             "legend": {
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "displayMode": "table",
               "placement": "bottom",
               "showLegend": true
@@ -1417,7 +1472,9 @@
             "orientation": "auto",
             "reduceOptions": {
               "values": false,
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "fields": ""
             },
             "textMode": "value"
@@ -1482,7 +1539,9 @@
             "orientation": "auto",
             "reduceOptions": {
               "values": false,
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "fields": ""
             },
             "textMode": "value"
@@ -1547,7 +1606,9 @@
             "orientation": "auto",
             "reduceOptions": {
               "values": false,
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "fields": ""
             },
             "textMode": "value"
@@ -1613,7 +1674,9 @@
           "id": 307,
           "options": {
             "legend": {
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "displayMode": "table",
               "placement": "bottom",
               "showLegend": true
@@ -1694,7 +1757,10 @@
           "id": 308,
           "options": {
             "legend": {
-              "calcs": ["lastNotNull", "mean"],
+              "calcs": [
+                "lastNotNull",
+                "mean"
+              ],
               "displayMode": "table",
               "placement": "bottom",
               "showLegend": true
@@ -1734,7 +1800,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 7
+        "y": 8
       },
       "id": 400,
       "panels": [
@@ -1800,7 +1866,10 @@
           "id": 401,
           "options": {
             "legend": {
-              "calcs": ["lastNotNull", "max"],
+              "calcs": [
+                "lastNotNull",
+                "max"
+              ],
               "displayMode": "table",
               "placement": "bottom",
               "showLegend": true
@@ -1871,7 +1940,9 @@
           "id": 402,
           "options": {
             "legend": {
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "displayMode": "table",
               "placement": "bottom",
               "showLegend": true
@@ -1953,7 +2024,10 @@
           "id": 403,
           "options": {
             "legend": {
-              "calcs": ["lastNotNull", "max"],
+              "calcs": [
+                "lastNotNull",
+                "max"
+              ],
               "displayMode": "table",
               "placement": "bottom",
               "showLegend": true
@@ -2024,7 +2098,9 @@
             "orientation": "auto",
             "reduceOptions": {
               "values": false,
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "fields": ""
             },
             "showThresholdLabels": false,
@@ -2080,7 +2156,9 @@
             "orientation": "auto",
             "reduceOptions": {
               "values": false,
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "fields": ""
             },
             "showThresholdLabels": false,
@@ -2147,7 +2225,10 @@
           "id": 406,
           "options": {
             "legend": {
-              "calcs": ["lastNotNull", "mean"],
+              "calcs": [
+                "lastNotNull",
+                "mean"
+              ],
               "displayMode": "table",
               "placement": "bottom",
               "showLegend": true
@@ -2211,7 +2292,9 @@
             "footer": {
               "countRows": false,
               "fields": "",
-              "reducer": ["sum"],
+              "reducer": [
+                "sum"
+              ],
               "show": false
             },
             "showHeader": true
@@ -2253,7 +2336,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 8
+        "y": 9
       },
       "id": 500,
       "panels": [
@@ -2309,7 +2392,9 @@
           "id": 501,
           "options": {
             "legend": {
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "displayMode": "table",
               "placement": "bottom",
               "showLegend": true
@@ -2381,7 +2466,10 @@
           "id": 502,
           "options": {
             "legend": {
-              "calcs": ["lastNotNull", "max"],
+              "calcs": [
+                "lastNotNull",
+                "max"
+              ],
               "displayMode": "table",
               "placement": "bottom",
               "showLegend": true
@@ -2452,7 +2540,9 @@
             "orientation": "auto",
             "reduceOptions": {
               "values": false,
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "fields": ""
             },
             "textMode": "value_and_name"
@@ -2518,7 +2608,9 @@
           "id": 504,
           "options": {
             "legend": {
-              "calcs": ["lastNotNull"],
+              "calcs": [
+                "lastNotNull"
+              ],
               "displayMode": "table",
               "placement": "bottom",
               "showLegend": true
@@ -2543,22 +2635,36 @@
       "type": "row"
     }
   ],
-"refresh": "10s",
-"schemaVersion": 38,
-"style": "dark",
-"tags": ["prusa", "mk4", "orangepi", "ultimate"],
-"templating": {
-  "list": []
-},
-"time": {
-  "from": "now-15m",
-  "to": "now"
-},
-"timepicker": {
-  "refresh_intervals": ["5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h"]
-},
-"timezone": "",
-"title": "🔧 Prusa MK4 - Ultimate Dashboard",
-"uid": "prusa-ultimate",
-"version": 0
+  "refresh": "10s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": [
+    "prusa",
+    "mk4",
+    "orangepi",
+    "ultimate"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": [
+      "5s",
+      "10s",
+      "30s",
+      "1m",
+      "5m",
+      "15m",
+      "30m",
+      "1h"
+    ]
+  },
+  "timezone": "",
+  "title": "🔧 Prusa MK4 - Ultimate Dashboard",
+  "uid": "prusa-ultimate",
+  "version": 0
 }
