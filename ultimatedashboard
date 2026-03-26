@@ -468,10 +468,17 @@
                   "type": "color-background"
                 }
               },
+              "color": {
+                "mode": "thresholds"
+              },
               "mappings": [],
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },                  
                   {
                     "color": "red",
                     "value": -200
@@ -506,7 +513,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 6
+            "y": 5
           },
           "id": 601,
           "options": {
