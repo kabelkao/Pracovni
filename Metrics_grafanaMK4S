@@ -1,0 +1,170 @@
+Kompletní seznam metrik z UDP syslog zpráv (PrusaLink Metrics).
+
+---
+
+## 📐 Geometry & Position
+
+| Metrika | Popis | Jednotka |
+|---------|-------|----------|
+| `adj_z` | Aktuální nastavení Z-axis offsetu | mm |
+| `mbl_l` | Mesh Bed Leveling - počet bodů leveling sítě | - |
+| `mbl_z` | Mesh Bed Leveling - aktuální Z hodnota v síti | mm |
+| `stp_stall` | Stepper motor stall detection | boolean |
+
+---
+
+## 🌡️ Temperature Sensors
+
+| Metrika | Popis | Jednotka |
+|---------|-------|----------|
+| `temp_hbr` | Teplota heatbreak (chladící část hotend) | °C |
+| `temp_mcu` | Teplota MCU (hlavní procesor) | °C |
+| `temp_noz` | Aktuální teplota nozzle | °C |
+| `ttemp_noz` | Cílová (target) teplota nozzle | °C |
+
+---
+
+## ⚡ Electrical Metrics
+
+| Metrika | Popis | Jednotka |
+|---------|-------|----------|
+| `bed_voltage` | Napětí na vyhřívaném stole | V |
+| `heater_voltage` | Napětí na ohřívači nozzle | V |
+| `heater_current` | Proud ohřívačem nozzle | A |
+| `heater_enabled` | Stav zapnutí ohřívače | boolean |
+| `input_current` | Celkový vstupní proud | A |
+| `cur_mmu_imp` | Proud MMU jednotky (Multi Material Unit) | A |
+| `oc_inp` | Overcurrent detection - vstup | boolean |
+| `oc_nozz` | Overcurrent detection - nozzle | boolean |
+
+---
+
+## 🌀 Fans
+
+| Metrika | Popis | Jednotka |
+|---------|-------|----------|
+| `fan_measured` | Naměřené otáčky ventilátoru | RPM |
+| `fan_pwm` | PWM hodnota ventilátoru | % (0-255) |
+| `fan_state` | Stav ventilátoru | enum |
+
+---
+
+## 🔬 Loadcell (Force Sensor)
+
+| Metrika | Popis | Jednotka |
+|---------|-------|----------|
+| `loadcell_value` | **Aktuální hodnota loadcell sensoru** | raw value |
+| `loadcell_scale` | **Škálovací faktor loadcell** | - |
+| `loadcell_age` | **Stáří posledního měření** | ms |
+| `loadcell_threshold` | Prahová hodnota pro detekci | raw value |
+| `loadcell_threshold_cont` | Kontinuální prahová hodnota | raw value |
+| `loadcell_hysteresis` | Hystereze pro prevenci false triggeru | raw value |
+| `loadcell_hp` | Loadcell high-pass filter | - |
+| `loadcell_o` | Loadcell offset | - |
+| `loadcell_r` | Loadcell raw value | - |
+| `loadcell_s` | Loadcell state | enum |
+| `loadcell_xy` | Loadcell XY position | - |
+
+---
+
+## 📄 Filament Sensors
+
+| Metrika | Popis | Jednotka |
+|---------|-------|----------|
+| `filament` | Stav detekce filamentu | boolean |
+| `fsensor_f` | Front filament sensor | boolean |
+| `fsensor_r` | Rear filament sensor | boolean |
+| `fsensor_ri` | Rear filament sensor raw input | raw value |
+| `fsensor_st` | Filament sensor state | enum |
+| `door_sensor` | Stav dveřního senzoru (detekce otevření) | boolean |
+
+---
+
+## 🖨️ Print Job Status
+
+| Metrika | Popis | Jednotka |
+|---------|-------|----------|
+| `is_printing` | Probíhá tisk? | boolean |
+| `print_filename` | Název právě tisknoucího souboru | string |
+| `sdpos` | Pozice v G-code souboru (SD karta) | byte offset |
+| `ftch_sdpos` | Fetcher - SD pozice | byte offset |
+| `ftch_status` | Fetcher status | enum |
+| `ftch_tstatus` | Fetcher transfer status | enum |
+| `points_dropped` | Počet zahozených datových bodů | count |
+
+---
+
+## 🧠 System Performance
+
+| Metrika | Popis | Jednotka |
+|---------|-------|----------|
+| `cpu_usage` | Vytížení CPU | % |
+| `heap_free` | Volná heap paměť | bytes |
+| `heap_total` | Celková heap paměť | bytes |
+| `runtime_u` | Runtime uptime | seconds |
+| `maintask_loop` | Main task loop time | ms |
+| `stack_m` | Stack usage - main | bytes |
+| `stack_t` | Stack usage - task | bytes |
+
+---
+
+## 🌐 Network Statistics
+
+| Metrika | Popis | Jednotka |
+|---------|-------|----------|
+| `eth_in_recv` | Ethernet - přijatá data | bytes |
+| `eth_out_sent` | Ethernet - odeslaná data | bytes |
+| `esp_in_recv` | ESP (WiFi) - přijatá data | bytes |
+| `esp_out_sent` | ESP (WiFi) - odeslaná data | bytes |
+
+---
+
+## 🗄️ Storage & Queue
+
+| Metrika | Popis | Jednotka |
+|---------|-------|----------|
+| `store_bytes` | Počet uložených bytů | bytes |
+| `store_id` | ID úložiště | - |
+| `store_items` | Počet položek v úložišti | count |
+| `store_migrations` | Počet migrací úložiště | count |
+| `gcd_que_sz` | Velikost G-code fronty | count |
+| `cmdcnt` | Počet zpracovaných příkazů | count |
+
+---
+
+## 🔧 Command Fetcher
+
+| Metrika | Popis | Jednotka |
+|---------|-------|----------|
+| `ftch_cmds` | Fetcher - počet příkazů | count |
+| `ftch_dur` | Fetcher - doba trvání | ms |
+| `ftch_occ` | Fetcher - počet výskytů | count |
+
+---
+
+## 🔖 Firmware Info
+
+| Metrika | Popis | Jednotka |
+|---------|-------|----------|
+| `fw_version` | Verze firmware | string |
+| `buddy_revision` | Revize Buddy boardu | number |
+| `buddy_bom` | BOM (Bill of Materials) verze Buddy boardu | number |
+
+---
+
+## 🤝 MMU (Multi Material Unit)
+
+| Metrika | Popis | Jednotka |
+|---------|-------|----------|
+| `mmu_comm` | MMU komunikace status | enum |
+| `cur_mmu_imp` | MMU proud (impedance měření) | A |
+
+---
+
+## 🕐 Telemetry
+
+| Metrika | Popis | Jednotka |
+|---------|-------|----------|
+| `last_push_timestamp` | Timestamp posledního push události | unix timestamp |
+
+---
