@@ -433,7 +433,7 @@
       ],
       "title": "Current File",
       "type": "stat"
-    }
+    },
     {
       "collapsed": true,
       "gridPos": {
@@ -1077,8 +1077,7 @@
       ],
       "title": "🔥 CRITICAL PRINTER",
       "type": "row"
-    }
-,
+    },
     {
       "collapsed": true,
       "gridPos": {
@@ -1728,7 +1727,7 @@
       ],
       "title": "⚙️ ADVANCED PRINTER",
       "type": "row"
-    }
+    },
     {
       "collapsed": true,
       "gridPos": {
@@ -2247,7 +2246,7 @@
       ],
       "title": "🖥️ ORANGEPI MONITORING",
       "type": "row"
-    }
+    },
     {
       "collapsed": true,
       "gridPos": {
@@ -2542,4 +2541,24 @@
       ],
       "title": "📈 MONITORING STACK",
       "type": "row"
-    }
+    },
+  ],
+  "refresh": "10s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["prusa", "mk4", "orangepi", "ultimate"],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": ["5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h"]
+  },
+  "timezone": "",
+  "title": "🔧 Prusa MK4 - Ultimate Dashboard",
+  "uid": "prusa-ultimate",
+  "version": 0
+}
